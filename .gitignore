@@ -1,0 +1,29 @@
+# Vivado generated files
+.cache/
+.hw/
+.ip_user_files/
+.runs/
+.sim/
+.gen/
+
+# Logs / temporary files
+*.log
+*.jou
+*.str
+
+# FPGA generated binaries
+*.bit
+*.bin
+*.ltx
+
+# Simulation generated files
+*.wdb
+*.wcfg
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
