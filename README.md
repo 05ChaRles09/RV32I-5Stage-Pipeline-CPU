@@ -257,9 +257,7 @@ RV32I CPU
 - AXI / AXI-Lite
 - BRAM
 
-## Oral Presentation Focus
-
-本專題口試主要可以從以下方向說明：
+## Focus
 
 1. **Pipeline**：為什麼拆成 IF / ID / EX / MEM / WB，以及 pipeline register 的作用。
 2. **Datapath**：PC → IMEM → Register File → ALU → DMEM → WB 的資料流。
