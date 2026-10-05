@@ -145,8 +145,6 @@ CPU AXI-Lite Wrapper
 RV32I 5-Stage CPU
 ```
 
-> 目前 README 不宣稱上述 AXI-Lite integration 已經在 PYNQ-ZU 實板成功運作。
-
 ## Project Structure
 
 ```text
