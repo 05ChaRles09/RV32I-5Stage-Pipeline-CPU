@@ -303,6 +303,9 @@ RISC-V RV32I · Computer Architecture · 5-Stage Pipeline · Datapath · Registe
 
 **Yu-Chen Chao**
 RV32I 5-Stage Pipeline CPU
+
 Platform: PYNQ-ZU
+
 HDL: Verilog / SystemVerilog
+
 ISA: RISC-V RV32I
