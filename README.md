@@ -168,6 +168,10 @@ SIZE = 0x10000
 | `0x1C` | `T_WB` | 讀取所選 trace entry 的 write-back data |
 | `0x20` | `T_META` | 讀取 trace metadata；Notebook 以 `(meta >> 1) & 31` 取得 `wb_rd`，以 `meta & 1` 取得 `wb_we` |
 
+| `0x24` | `ILLEGAL` | 非法指令 sticky flag（bit 0；寫入 reset 才清除） |
+| `0x28` | `ILLEGAL_PC` | 第一個非法指令的 PC |
+| `0x2C` | `FEATURE` | 功能旗標：bit 0 = illegal 暫存器、bit 1 = RV32M MUL（目前讀值 `0x3`）；AXI 位址寬度為 6 bit |
+
 測試輸出中的 trace status 為 `0x80000100`，代表該版本已啟用 trace，且擷取到 256 筆紀錄。
 
 ## Project Structure
@@ -261,13 +265,15 @@ RV32I CPU
 
 ### Phase 3 — RISC-V Extensions
 
+> 最新狀態：Zbb（含 `rori`）、`MUL`、非法指令偵測已通過 sim（`sim/run_xsim.bat`，7 個 testbench）與實板測試（Notebook v2：**39/39 PASS**，程式 115 字、85 筆 write-back、8 條非法指令，第一個非法 PC `0x1A4`）。Vivado 2022.2：WNS +1.995 ns、WHS +0.010 ns、DSP48E2 = 3。細節見 `docs/`。
+
 預計研究與實作，完成後需另行驗證：
 
-- [ ] **RV32M：`MUL`**
-- [ ] **Zbb：`CLZ` / `CTZ` / `CPOP`**
-- [ ] **Zbb：`MIN` / `MAX`**
-- [ ] **Zbb：`ANDN` / `ORN` / `XNOR`**
-- [ ] **Zbb：`ROL` / `ROR`**
+- [x] **RV32M：`MUL`**（單週期、低 32 位元，對應 3 個 DSP48E2；MULH*/DIV*/REM* 仍視為非法指令）
+- [x] **Zbb：`CLZ` / `CTZ` / `CPOP`**
+- [x] **Zbb：`MIN` / `MAX`**
+- [x] **Zbb：`ANDN` / `ORN` / `XNOR`**
+- [x] **Zbb：`ROL` / `ROR`**
 - [ ] **Custom `XDOTP16`**
 
 其中 `XDOTP16` 預計作為自訂指令，用於展示 instruction decode、datapath 與 ALU／functional unit 的硬體擴充。

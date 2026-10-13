@@ -27,3 +27,9 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+# Vivado xsim command-line outputs
+xsim.dir/
+.xsim_work/
+.Xil/
+*.pb
+webtalk*

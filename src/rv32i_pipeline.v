@@ -14,7 +14,10 @@ module rv32i_pipeline #(
     output wire [31:0] wb_data_out,      // writeback data (final)
     output wire [4:0]  wb_rd_out,        // writeback destination register
     output wire        wb_we_out,        // writeback enable (valid & reg_write)
-    output wire [31:0] dmem_rdata_out    // data memory read data
+    output wire [31:0] dmem_rdata_out,   // data memory read data
+    // illegal-instruction reporting (sticky until reset)
+    output wire        illegal_out,      // 1 once an unsupported instruction has been executed
+    output wire [31:0] illegal_pc_out    // PC of the first such instruction
 );
     // ============================================================
     // IF stage
@@ -70,7 +73,8 @@ module rv32i_pipeline #(
 
     wire        id_reg_write, id_mem_read, id_mem_write, id_branch,
                id_jump, id_jalr, id_alu_src, id_mem_to_reg;
-    wire [3:0]  id_alu_control;
+    wire [5:0]  id_alu_control;
+    wire        id_illegal;
     wire        id_uses_rs1, id_uses_rs2;
     wire [1:0]  id_wb_sel, id_alu_a_sel;
 
@@ -78,6 +82,7 @@ module rv32i_pipeline #(
         .opcode      (id_opcode),
         .funct3      (id_funct3),
         .funct7      (id_funct7),
+        .rs2_field   (id_rs2),
         .reg_write   (id_reg_write),
         .mem_read    (id_mem_read),
         .mem_write   (id_mem_write),
@@ -90,7 +95,8 @@ module rv32i_pipeline #(
         .uses_rs1     (id_uses_rs1),
         .uses_rs2     (id_uses_rs2),
         .wb_sel       (id_wb_sel),
-        .alu_a_sel    (id_alu_a_sel)
+        .alu_a_sel    (id_alu_a_sel),
+        .illegal      (id_illegal)
     );
 
     wire [31:0] id_imm;
@@ -130,7 +136,8 @@ module rv32i_pipeline #(
     wire [31:0] ex_imm;
     wire [4:0]  ex_rs1, ex_rs2, ex_rd;
     wire [2:0]  ex_funct3;
-    wire [3:0]  ex_alu_control;
+    wire [5:0]  ex_alu_control;
+    wire        ex_illegal;
     wire        ex_reg_write, ex_mem_read, ex_mem_write, ex_mem_to_reg,
                 ex_alu_src, ex_branch, ex_jump, ex_jalr, ex_valid,
                 ex_uses_rs1, ex_uses_rs2;
@@ -163,6 +170,7 @@ module rv32i_pipeline #(
         .uses_rs2_in     (id_uses_rs2),
         .wb_sel_in        (id_wb_sel),
         .alu_a_sel_in     (id_alu_a_sel),
+        .illegal_in       (id_illegal),
         .pc_out          (ex_pc),
         .pc_plus4_out    (ex_pc_plus4),
         .rs1_data_out    (ex_rs1_data),
@@ -185,7 +193,8 @@ module rv32i_pipeline #(
         .uses_rs1_out    (ex_uses_rs1),
         .uses_rs2_out    (ex_uses_rs2),
         .wb_sel_out      (ex_wb_sel),
-        .alu_a_sel_out   (ex_alu_a_sel)
+        .alu_a_sel_out   (ex_alu_a_sel),
+        .illegal_out     (ex_illegal)
     );
 
     // ============================================================
@@ -430,6 +439,35 @@ module rv32i_pipeline #(
         end
         // if stall: hold pc
     end
+
+    // ============================================================
+    // Illegal-instruction detection (sticky)
+    // ============================================================
+    // An instruction that reaches EX with ex_valid=1 is on the committed path
+    // (wrong-path instructions are flushed before they leave ID), so flagging
+    // here never reports speculative garbage. The illegal instruction itself
+    // already acts as a NOP (see control_unit.v).
+    reg        illegal_seen;
+    reg [31:0] illegal_pc;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            illegal_seen <= 1'b0;
+            illegal_pc   <= 32'b0;
+        end else if (ex_valid && ex_illegal && !illegal_seen) begin
+            illegal_seen <= 1'b1;
+            illegal_pc   <= ex_pc;
+        end
+    end
+    assign illegal_out    = illegal_seen;
+    assign illegal_pc_out = illegal_pc;
+
+`ifndef SYNTHESIS
+    // simulation-only warning (every occurrence); run_all.py treats it as a failure
+    always @(posedge clk) begin
+        if (rst_n && ex_valid && ex_illegal)
+            $display("[ILLEGAL] t=%0t unsupported instruction at pc=0x%08h", $time, ex_pc);
+    end
+`endif
 
     // ============================================================
     // observable outputs tap real pipeline state so synthesis keeps it

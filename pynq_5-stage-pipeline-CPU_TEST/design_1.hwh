@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Sat Oct 10 18:20:03 2026" VIVADOVERSION="2022.2">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Tue Oct 13 10:14:05 2026" VIVADOVERSION="2022.2">
 
   <SYSTEMINFO ARCH="zynquplus" DEVICE="xczu5eg" NAME="design_1" PACKAGE="sfvc784" SPEEDGRADE="-1"/>
 
@@ -761,7 +761,7 @@
       </PORTS>
       <BUSINTERFACES/>
     </MODULE>
-    <MODULE COREREVISION="12" FULLNAME="/rv32i_pipelined_cpu_0" HWVERSION="1.0" INSTANCE="rv32i_pipelined_cpu_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="rv32i_pipelined_cpu" VLNV="xilinx.com:user:rv32i_pipelined_cpu:1.0">
+    <MODULE COREREVISION="23" FULLNAME="/rv32i_pipelined_cpu_0" HWVERSION="1.2" INSTANCE="rv32i_pipelined_cpu_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="rv32i_pipelined_cpu" VLNV="xilinx.com:user:rv32i_pipelined_cpu:1.2">
       <DOCUMENTS/>
       <ADDRESSBLOCKS>
         <ADDRESSBLOCK ACCESS="" INTERFACE="S00_AXI" NAME="S00_AXI_reg" RANGE="4096" USAGE="register"/>
