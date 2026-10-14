@@ -1,4 +1,4 @@
-// alu.v  RV32I ALU + Zbb (via zbb_unit) + RV32M MUL.
+// alu.v  RV32I ALU + Zbb (via zbb_unit) + RV32M MUL + custom XDOTP16.
 // ALU_Control[5] == 0 : base RV32I operation (ALU_* codes)
 // ALU_Control[5] == 1 : Zbb operation, code = ALU_Control[4:0]
 `timescale 1ns / 1ps
@@ -22,7 +22,18 @@ module alu (
     localparam ALU_SLTU = 6'b001011;
     localparam ALU_MUL  = 6'b001100;   // RV32M MUL: low 32 bits of A*B (same for signed/unsigned)
 
+    localparam ALU_XDOT = 6'b001101;   // custom XDOTP16: signed int16 2-element dot product
+
     wire [31:0] zbb_result;
+
+    // XDOTP16: rd = A[15:0]*B[15:0] + A[31:16]*B[31:16]  (signed 16x16 products, 32-bit wrap-around sum)
+    wire signed [15:0] xa0 = A[15:0];
+    wire signed [15:0] xa1 = A[31:16];
+    wire signed [15:0] xb0 = B[15:0];
+    wire signed [15:0] xb1 = B[31:16];
+    wire signed [31:0] xp0 = xa0 * xb0;
+    wire signed [31:0] xp1 = xa1 * xb1;
+    wire        [31:0] xdot_result = xp0 + xp1;
 
     zbb_unit zbb_inst (
         .A      (A),
@@ -47,6 +58,7 @@ module alu (
                 ALU_SRA:  Result = $signed(A) >>> B[4:0];
                 ALU_SLTU: Result = (A < B) ? 32'd1 : 32'd0;
                 ALU_MUL:  Result = A * B;      // 32x32 -> low 32 bits; inferred as DSP48E2
+                ALU_XDOT: Result = xdot_result; // 2 x DSP48E2 (16x16) + adder
                 default:  Result = 32'b0;
             endcase
         end

@@ -361,7 +361,7 @@
 	        4'h8 : reg_data_out = {26'b0, tr_meta_mem[tr_ridx]};  // [5:1]=wb_rd, [0]=wb_we
         4'h9 : reg_data_out = {31'b0, illegal_out_wire};       // 0x24 sticky illegal flag
         4'hA : reg_data_out = illegal_pc_out_wire;             // 0x28 PC of first illegal instr
-        4'hB : reg_data_out = 32'h0000_0003;                   // 0x2C feature bits: [0]=illegal regs, [1]=RV32M MUL
+        4'hB : reg_data_out = 32'h0000_0007;                   // 0x2C feature bits: [0]=illegal regs, [1]=RV32M MUL, [2]=custom XDOTP16
 	        default : reg_data_out = 0;
 	      endcase
 	end

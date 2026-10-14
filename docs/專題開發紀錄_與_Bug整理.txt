@@ -1,0 +1,200 @@
+RV32I 五級管線 CPU（PYNQ-ZU）— 開發紀錄與 Bug 整理
+====================================================
+專案：RV32I-5Stage-Pipeline-CPU（GitHub: 05ChaRles09/RV32I-5Stage-Pipeline-CPU）
+平台：PYNQ-ZU、Vivado 2022.2、AXI4-Lite IP
+整理日期：2026-10-14（「待確認」處為尚未量測／驗證的項目）
+
+
+一、專案現況總覽
+----------------------------------------------------
+1. CPU 核心：RV32I 五級管線（forwarding、load-use stall、branch flush）。
+2. AXI4-Lite 包裝：CPU 打包成 IP，位址寬度 6 bit，BASE=0x80000000、SIZE=0x10000。
+3. Trace buffer：256 筆，每個 cycle 取樣 {PC, wb_data, wb_rd, wb_we}。
+4. 已完成的擴充：
+   - 非法指令偵測（sticky 旗標 + 第一個非法 PC）
+   - Zbb（17 個運算 + rori）
+   - RV32M 只做 MUL（單週期、低 32 位元，3 個 DSP48E2）
+   - 自訂 XDOTP16（custom-0，R-type，不累加版）：
+       rd = rs1[15:0]*rs2[15:0] + rs1[31:16]*rs2[31:16]（有號 int16 x2 內積，結果取 32 位元）
+5. AXI 暫存器表（相對 BASE）：
+     0x00 CTRL    寫 0=reset、0x2=reset+arm trace、0x1=run；讀回 {wb_rd, wb_we, rst_n}
+     0x04 PC
+     0x08 WBD     最新寫回資料
+     0x0C DMEM
+     0x10 T_STATUS  [31]=支援 trace、[8:0]=已擷取筆數
+     0x14 T_IDX
+     0x18 T_PC
+     0x1C T_WB
+     0x20 T_META  [5:1]=wb_rd、[0]=wb_we
+     0x24 ILLEGAL     非法指令 sticky 旗標
+     0x28 ILLEGAL_PC  第一個非法指令的 PC
+     0x2C FEATURE     bit0=illegal 暫存器、bit1=MUL、bit2=XDOTP16（目前應讀到 0x7）
+
+
+二、時間線
+----------------------------------------------------
+階段 1  上板基本測試
+  - bitstream 上 PYNQ-ZU，讀暫存器全 0 → 釐清 reset/run 操作（寫 CTRL=0 reset、=1 run）。
+  - 結果：reg0=0x3，PC 在 {0x9C,0xA0,0xA4} 附近停住（spin），dmem[0]=0x2A=42。
+
+階段 2  Trace buffer 與 Jupyter 整合測試
+  - 加入 trace buffer 與 Notebook（T1~T6：reset/run/重跑、逐 cycle 對照 ISA 黃金模型）。
+  - 實板結果 16/16 PASS。
+
+階段 3  非法指令偵測 + Zbb + 一鍵回歸
+  - 新增 ILLEGAL/ILLEGAL_PC/FEATURE 暫存器、zbb_unit.v、Python 黃金模型 rv32i_model.py。
+  - 因使用者用 Vivado 2022.2、不裝 iverilog/Python：改為預先產生測試資料，
+    sim/ 提供 xsim 的 run_xsim.bat/.sh。
+  - 實板：Zbb 版 32/32 → 加 illegal 後 38/38。
+
+階段 4  Vivado IP 打包反覆修正（見第三節 Bug 1~9）
+  - IP 新名稱 rv32i_pipelined_cpu v1.2，路徑搬到 D:\FPGA\ip_repo_rv32i。
+
+階段 5  RV32M MUL
+  - 加入 ALU_MUL（A*B 取低 32 位元），control_unit 解碼 {funct7=0000001, funct3=000}。
+  - 實板 39/39 PASS（程式 115 字、85 筆寫回、8 條非法指令、第一個非法 PC=0x1A4、spin PC=0x1C8）。
+  - Vivado 結果：WNS +1.995 ns、WHS +0.010 ns、DSP48E2=3、illegal_seen 暫存器 2 個。
+
+階段 6  GitHub 同步
+  - 本機資料夾比遠端落後（最後 commit 2026-10-10），以遠端最新版為底合併後覆蓋，
+    再用 git fetch + git reset origin/main 對齊，之後 git add -A / commit / push 成功。
+  - 刻意刪除 repo 根目錄舊的 cpu_test_report.json（較新的報告在 pynq_5-stage-pipeline-CPU_TEST/）。
+
+階段 7  XDOTP16（不累加版）
+  - 設計決策：先做不累加版（硬體小、風險低、不動 forwarding/hazard）；
+    累加版需第三個讀取埠並改 forwarding/hazard，時序也更吃緊（WNS 只有 +1.995 ns）。
+    不累加版可用「xdotp16 t,a,b ; add acc,acc,t」兩條指令達成相同結果。
+  - 完成 RTL、黃金模型、測試、Notebook v3（136 字程式、102 筆寫回、9 條非法指令、
+    第一個非法 PC=0x1F4、spin PC=0x21C）。
+  - 第一次上板：XDOTP16 前 7 筆結果正確，但程式被截斷 → 找到 imem.v 的 Bug 10（見下）。
+  - 修正 imem.v 後重新 Implementation / Bitstream / 上板：Notebook v3 實板 40/40 ALL PASS（2026-10-14）。
+    （spin PC 0x21C、102 筆寫回與黃金模型一致、XDOTP16 10 筆全部正確、illegal 第一個 PC=0x1F4）
+
+
+三、Bug 與解決方法（依發生順序）
+----------------------------------------------------
+
+【Bug 1】IP 打包後 module not found / 檔案找不到
+  現象：Synthesis 找不到 module。
+  原因：component.xml 裡檔案路徑指向 ../src，IP 搬位置後失效。
+  解法：把 component.xml 的檔案路徑改成 IP 資料夾內的 hdl/，檔案複製進 hdl/。
+  教訓：IP 要自包含（self-contained），不要引用 IP 資料夾外的原始碼。
+
+【Bug 2】.v 檔被當成 Verilog Header
+  現象：module 被視為標頭檔、不參與合成。
+  原因：component.xml 的 .v 項目帶有 isIncludeFile 屬性（File Groups 的 Is Include 被勾）。
+  解法：移除 .v 項目的 isIncludeFile（用 PowerShell regex 改 xml 或 GUI 取消勾選），重新打包。
+  正確設定：Verilog Synthesis / Verilog Simulation / Test Bench 的 Is Include 不勾；
+            UI Layout 的 xgui .tcl 要勾。
+
+【Bug 3】舊副本與舊路徑造成重複／舊程式被用到
+  現象：edit project 的 imports 內有舊副本，或 IP repository 設定還指向舊路徑。
+  解法：刪除 imports 內的舊副本、清掉舊 repository 路徑，Refresh IP Catalog；
+        必要時另建乾淨的 IP 資料夾（最後採用 D:\FPGA\ip_repo_rv32i）。
+
+【Bug 4】Customization Parameters／Addressing and Memory 是空的，ADDR_WIDTH=4
+  現象：IP 精靈裡參數空白；C_S00_AXI_ADDR_WIDTH 預設為 4（只夠 4 個暫存器）。
+  原因：頂層沒被正確辨識；預設值仍是 4，但我們有 10 個暫存器（到 0x2C）。
+  解法：頂層檔案設 C_S00_AXI_ADDR_WIDTH 預設 6（或在 Tcl 設 value 6），
+        確認頂層選對後 Merge changes 讓 Vivado 重新辨識。
+
+【Bug 5】Merge changes 無限循環（warning 19-377）
+  原因：File Groups 內有重複檔案、參數與 component.xml 不一致。
+  解法：清乾淨資料夾與重複項目後重新打包。
+
+【Bug 6】改了 RTL 但合成結果沒變（快取）
+  原因：OOC synthesis、ipshared 快取沿用舊檔。
+  解法：Reset Output Products → Generate Output Products（選 Global）；
+        仍無效則 update_ip_catalog -rebuild，或刪除 ipshared 底下該 IP 的資料夾再 Generate。
+  驗證：get_files -all 找出主專案實際使用的 .v，直接檢查內容。
+
+【Bug 7】Re-Package 後主專案不出現 Upgrade Selected
+  原因：版本號沒變，Vivado 不視為新版本。
+  解法：在 Identification 把 Version 升版（例如 1.2→1.3；同版本重複使用時要再升），
+        Re-Package 後 Refresh IP Catalog，Report IP Status 再 Upgrade Selected，
+        升級後到 Address Editor 確認 Base=0x80000000、Range=64K。
+
+【Bug 8】不小心刪掉 design_1 / 沒有 Block Design
+  解法：先把 IP 打包好、確認參數與位址正常，再重建 Block Design；
+        BD 位址要手動確認，Notebook 的 BASE 才不會錯。
+
+【Bug 9】bit 與 hwh 不成對 / PYNQ 使用舊 bitstream
+  現象：板上讀值全 0 或 Overlay 與實際硬體不一致。
+  解法：design_1_wrapper.bit 與 design_1.hwh 必須是同一次 build、同檔名前綴，
+        放在同一資料夾，上傳後先 Kernel → Restart 再載入 Overlay。
+  補充：GitHub 的 pynq_5-stage-pipeline-CPU_TEST/ 內的 bit/hwh 要在新 build 後手動更新。
+
+【Bug 10】imem.v 內建程式被 NOP 填充迴圈蓋掉（XDOTP16 上板失敗的真正原因）
+  現象：
+    - XDOTP16 前 7 筆結果與黃金模型一致，但 rd=24、26、7 的 3 筆沒有執行到。
+    - 沒有 spin 迴圈、PC 一直增加（PC 讀值到數百萬）、trace 最後 130 多筆都是 NOP（we=1, rd=0, data=0）。
+    - 寫回筆數 94（預期 102）、T8 的 illegal 全部失敗（第一條非法指令在 PC 500，根本沒執行到）、
+      x7/x8/x10/x14 最終值不對。
+  原因：
+    imem.v 的 initial 區塊順序錯誤：
+      先寫 mem[0..135]（136 字程式），
+      之後才用 for (i = 115; i < DEPTH; ...) mem[i] = NOP 填充，
+    結果第 115~135 字被蓋回 NOP。起點 115 是舊 MUL 版程式長度，加入 XDOTP16 後沒有跟著改。
+  為什麼模擬沒抓到：
+    tb_board_program 從 board_program.hex 載入程式（readmemh 蓋過內建內容），沒測到內建預設值。
+  證明方式：
+    在模擬中把「前 115 字為新程式、其後全 NOP」餵給 CPU，256 個 cycle 的 trace 與實板逐筆完全一致。
+  解法：
+    先 for (i = 0; i < DEPTH; ...) 全部填 NOP，再寫入程式字；之後程式長度改變也不用再改填充起點。
+  防呆：
+    新增 tb_imem_default.v：MEM_FILE 指向不存在的檔案，只剩內建預設內容，
+    檢查 mem[0..135] 與 board_program.hex 一致、其後為 NOP；
+    對舊寫法（115 起填 NOP）會失敗（21 項），修正後通過。
+  教訓：
+    - 上板用的是「合成進 bitstream 的預設內容」，模擬若只從檔案載入就等於沒測到。
+    - 程式長度、起點等「魔術數字」要與產生器同步（或改成不依賴長度的寫法）。
+
+【事件】GitHub 本機落後遠端
+  現象：本機最後 commit 為 10/10，遠端已有更新；README 兩邊內容不同。
+  做法：以遠端最新版為底合併；git fetch + git reset origin/main（mixed reset，保留工作目錄）；
+        換行（LF/CRLF）警告可忽略；push 被拒時用 pull --rebase，不用 --force。
+
+【已知待處理】
+  - constrs/constraints.xdc 是舊版（port 名稱 clk、rst_n），與目前 BD 設計不對應，尚未更新。
+  - GitHub 上 pynq_5-stage-pipeline-CPU_TEST/ 的 bit/hwh 要換成含 XDOTP16 的新 build。
+
+
+四、驗證紀錄
+----------------------------------------------------
+模擬（iverilog -g2005，共 9 個 testbench，皆 PASS）：
+  tb_rv32i_pipeline、tb_jalr、tb_extra_branches、tb_load_use_branch、tb_illegal、
+  tb_zbb_unit、tb_zbb_prog（40 支程式，含 MUL 與 XDOTP16）、
+  tb_board_program（上板 136 字程式整合驗證）、tb_imem_default（內建程式完整性）。
+突變測試（確認測試有效）：
+  - MUL 改成 A+B → tb_zbb_prog 失敗。
+  - XDOTP16 改成 xp0 - xp1 或高半部誤接 → tb_zbb_prog 與 tb_board_program 皆失敗。
+  - imem 舊寫法（115 起填 NOP）→ tb_imem_default 失敗。
+實板：
+  16/16（基本+trace）→ 32/32（Zbb）→ 38/38（+illegal）→ 39/39（+MUL）
+  XDOTP16 版：第一次 136 字程式因 Bug 10 被截斷（XDOTP16 前 7 筆正確）；
+              修正後 Notebook v3 實板 40/40 PASS（T7：Zbb 18 項、MUL 11 筆、XDOTP16 10 筆；T8a~f illegal 全過）。
+Vivado 數據：
+  MUL 版：WNS +1.995 ns、WHS +0.010 ns、DSP48E2=3。
+  XDOTP16 版：WNS/WHS/DSP 數量【待確認】（預期 DSP 約 5 個，多一個加法器可能壓縮時序）。
+
+
+五、後續待辦
+----------------------------------------------------
+1. （已完成）套用修正後的 imem.v 重新打包、上板，40/40 PASS。
+2. 記錄含 XDOTP16 的 WNS/WHS/DSP 數量（目前仍是 MUL 版的數字），更新 README 與專題報告數據（使用者先前表示報告數據之後再更新）。
+3. 更新 constraints.xdc；GitHub 換上含 XDOTP16 的新 bit/hwh 與本次 imem.v 修正、README 後 commit/push。
+4. 選配：XDOTP16 累加版（XDOTP16ACC，需第三個讀取埠與 forwarding/hazard 修改）；
+   Phase 4 的 AXI/BRAM 整合（讓 PS 載入不同程式）；以 FIR 或影像 kernel 比較有無 XDOTP16 的週期數。
+
+
+六、專題報告的重點（心得）
+----------------------------------------------------
+1. 驗證要涵蓋「實際上板的路徑」：模擬若只從檔案載入程式，會漏掉合成進 bitstream 的預設內容。
+2. 測試要有突變測試（故意改壞 RTL 看測試是否會失敗），才能證明測試真的有效。
+3. IP 打包的坑多半來自路徑、Is Include、版本號、快取；固定流程可以省很多時間：
+   覆蓋 hdl/ → 確認 File Groups → 升版 Re-Package → Upgrade IP → Generate（Global）→
+   用檔案內容確認主專案確實用到新檔 → Bitstream → 成對更新 bit/hwh。
+4. 用 Python 黃金模型逐 cycle 比對 trace，可以直接定位硬體與預期的差異
+   （例如本次一眼看出「前 115 字正確、之後全是 NOP」）。
+5. 設計擴充時先做最小改動版本（不累加版 XDOTP16），並說明累加版的取捨
+   （指令數 vs 硬體複雜度與時序）。

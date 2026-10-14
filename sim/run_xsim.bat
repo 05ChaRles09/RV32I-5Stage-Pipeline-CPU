@@ -1,6 +1,6 @@
 @echo off
 REM ============================================================================
-REM  run_xsim.bat  用 Vivado 的 xsim 以命令列一次跑完全部 7 個 testbench（選用；也可在 Vivado GUI 逐一執行）
+REM  run_xsim.bat  用 Vivado 的 xsim 以命令列一次跑完全部 9 個 testbench（選用；也可在 Vivado GUI 逐一執行）
 REM
 REM  使用方式
 REM    1. 先載入 Vivado 環境，例如：  C:\Xilinx\Vivado\2022.2\settings64.bat
@@ -19,7 +19,7 @@ if errorlevel 1 (
 if not exist .xsim_work mkdir .xsim_work
 set SRCS=
 for %%F in (..\src\*.v) do set SRCS=!SRCS! %%F
-set TBS=tb_rv32i_pipeline tb_jalr tb_extra_branches tb_load_use_branch tb_illegal tb_zbb_unit tb_zbb_prog
+set TBS=tb_rv32i_pipeline tb_jalr tb_extra_branches tb_load_use_branch tb_illegal tb_zbb_unit tb_zbb_prog tb_board_program tb_imem_default
 set NFAIL=0
 for %%T in (%TBS%) do (
   echo ==== %%T

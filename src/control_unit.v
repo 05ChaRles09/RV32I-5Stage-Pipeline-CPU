@@ -51,6 +51,7 @@ module control_unit (
     localparam ALU_SRA  = 6'b001010;
     localparam ALU_SLTU = 6'b001011;
     localparam ALU_MUL  = 6'b001100;
+    localparam ALU_XDOT = 6'b001101;   // custom XDOTP16
 
     // ---- Zbb operations ({1'b1, code}) ---------------------------
     localparam ZB_ANDN   = 6'b100000;
@@ -80,6 +81,7 @@ module control_unit (
     localparam OPCODE_JALR   = 7'b1100111;
     localparam OPCODE_LUI    = 7'b0110111;
     localparam OPCODE_AUIPC  = 7'b0010111;
+    localparam OPCODE_CUSTOM0 = 7'b0001011;   // RISC-V custom-0: XDOTP16 (funct7=0000000, funct3=000)
 
     always @(*) begin
         reg_write   = 1'b0;
@@ -239,6 +241,15 @@ module control_unit (
                 alu_src    = 1'b1;
                 alu_a_sel  = 2'b01; // pc
                 alu_control= ALU_ADD;
+            end
+
+            OPCODE_CUSTOM0: begin
+                // XDOTP16 rd, rs1, rs2 : R-type, only funct7=0000000/funct3=000 is defined
+                reg_write = 1'b1;
+                uses_rs1  = 1'b1;
+                uses_rs2  = 1'b1;
+                alu_control = ALU_XDOT;
+                if ({funct7, funct3} != 10'b0000000_000) illegal = 1'b1;
             end
 
             default: illegal = 1'b1;     // unknown opcode, SYSTEM, FENCE, 0x00000000 ...
