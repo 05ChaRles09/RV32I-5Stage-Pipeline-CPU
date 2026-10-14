@@ -2,7 +2,7 @@ RV32I 五級管線 CPU（PYNQ-ZU）— 開發紀錄與 Bug 整理
 ====================================================
 專案：RV32I-5Stage-Pipeline-CPU（GitHub: 05ChaRles09/RV32I-5Stage-Pipeline-CPU）
 平台：PYNQ-ZU、Vivado 2022.2、AXI4-Lite IP
-整理日期：2026-10-14（「待確認」處為尚未量測／驗證的項目）
+整理日期：2026-10-14（依對話紀錄整理；「待確認」處為尚未量測／驗證的項目）
 
 
 一、專案現況總覽
@@ -175,19 +175,24 @@ RV32I 五級管線 CPU（PYNQ-ZU）— 開發紀錄與 Bug 整理
               修正後 Notebook v3 實板 40/40 PASS（T7：Zbb 18 項、MUL 11 筆、XDOTP16 10 筆；T8a~f illegal 全過）。
 Vivado 數據：
   MUL 版：WNS +1.995 ns、WHS +0.010 ns、DSP48E2=3。
-  XDOTP16 版：WNS/WHS/DSP 數量【待確認】（預期 DSP 約 5 個，多一個加法器可能壓縮時序）。
+  XDOTP16 版（Vivado 2022.2，Implementation 後）：WNS +1.977 ns、WHS +0.001 ns、DSP48E2 = 5（= MUL 的 3 個 + XDOTP16 的 2 個）。
+    註：WHS 僅 +0.001 ns，已滿足但餘裕很小；重跑 Implementation 時可能浮動。
+    資源（routed，design_1_wrapper，xczu5eg-sfvc784-1-i）：CLB LUTs 3877（3.31%；Logic 2947、Memory 930 含 Distributed RAM 864）、
+    CLB Registers 2174（0.93%）、DSP48E2 5（0.40%）、Block RAM 0、CARRY8 46。記憶體皆以 Distributed RAM 實作。
+    功耗（report_power，估算，Confidence Medium）：Total 2.613 W、Dynamic 2.189 W、Static 0.425 W；PS8 2.158 W、
+    rv32i_pipelined_cpu_0 0.027 W（約 1%）、Junction 31.1 C。PL 時脈 100 MHz；依 WNS +1.977 ns 粗估上限約 125 MHz（估算）。
 
 
 五、後續待辦
 ----------------------------------------------------
 1. （已完成）套用修正後的 imem.v 重新打包、上板，40/40 PASS。
-2. 記錄含 XDOTP16 的 WNS/WHS/DSP 數量（目前仍是 MUL 版的數字），更新 README 與專題報告數據（使用者先前表示報告數據之後再更新）。
+2. （已完成）含 XDOTP16 的 WNS/WHS/DSP/LUT/FF 已記錄、功耗，更新 README 與專題報告數據（使用者先前表示報告數據之後再更新）。
 3. 更新 constraints.xdc；GitHub 換上含 XDOTP16 的新 bit/hwh 與本次 imem.v 修正、README 後 commit/push。
 4. 選配：XDOTP16 累加版（XDOTP16ACC，需第三個讀取埠與 forwarding/hazard 修改）；
    Phase 4 的 AXI/BRAM 整合（讓 PS 載入不同程式）；以 FIR 或影像 kernel 比較有無 XDOTP16 的週期數。
 
 
-六、專題報告的重點（心得）
+六、可寫進專題報告的重點（心得）
 ----------------------------------------------------
 1. 驗證要涵蓋「實際上板的路徑」：模擬若只從檔案載入程式，會漏掉合成進 bitstream 的預設內容。
 2. 測試要有突變測試（故意改壞 RTL 看測試是否會失敗），才能證明測試真的有效。
