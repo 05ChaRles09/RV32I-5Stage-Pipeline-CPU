@@ -210,7 +210,11 @@ SIZE = 0x10000
 
 ## Verification Status
 
+<<<<<<< HEAD
 ### 模擬（11 個 testbench）
+=======
+### 模擬（10 個 testbench）
+>>>>>>> bac961d7efc5fdee3ac42950da2f5d60c0faaf4e
 
 在 `sim/` 執行 `run_xsim.bat`（Windows）或 `run_xsim.sh`（Linux），需先載入 Vivado 環境。
 
@@ -225,7 +229,10 @@ SIZE = 0x10000
 | `tb_zbb_prog` | 40 支程式（directed + 30 支隨機），涵蓋 Zbb、`MUL`、`XDOTP16`、forwarding、load-use、branch flush，與 Python 黃金模型比對最終暫存器與記憶體 |
 | `tb_board_program` | 上板用 136 字程式的整合驗證（暫存器、DMEM、第一個非法 PC、spin 前所需 cycle） |
 | `tb_imem_default` | `imem.v` 內建（寫死）程式完整性，也就是合成進 bitstream 的內容 |
+<<<<<<< HEAD
 | `tb_bram_timing` | BRAM 同步讀取的時序邊界：store→load 緊接、load-use stall 時取指保持、load 結果當 store 資料、load-use 後接 taken branch、jal 重導向、迴圈 RAW（預期值由 Python 黃金模型產生） |
+=======
+>>>>>>> bac961d7efc5fdee3ac42950da2f5d60c0faaf4e
 | `tb_axi_imem_load` | Phase 4 Stage 1：透過 AXI-Lite 暫存器（0x30/0x34/0x38）載入程式、執行、執行中寫入被拒絕、重新載入另一支程式 |
 
 測試有效性以突變測試確認：故意把 `MUL` 改成加法、把 `XDOTP16` 改成減法或接錯半字，以及重現 `imem.v` 填充迴圈的舊錯誤，對應測試都會失敗。
@@ -399,6 +406,7 @@ RV32I CPU
 
 **Stage 1（已實作）— PS 可寫入的指令記憶體**：`imem` 新增寫入埠（仍是 Distributed RAM、非同步讀取，pipeline 不變），PS 在 CPU reset 時經 AXI 暫存器 `0x30/0x34/0x38` 載入程式，不必重新合成。Notebook v4（cell ⑧）可載入 hex 程式並與黃金模型逐筆比對。
 
+<<<<<<< HEAD
 **Stage 2a（模擬完成）— pipeline 改為 BRAM 同步讀取**：IMEM 位址接 `pc_next`（stall 時保持 `pc`，讀出的指令與 `pc` 同拍對齊）；DMEM 的位址／寫入資料／寫入致能改由 EX 階段驅動（專用加法器 `rs1 + imm`），讀出資料在 MEM 階段出現。store 在 EX 提交是安全的（EX 內的指令不會是推測執行），所以 store 後緊接 load 不需要額外 bypass。與改動前逐 cycle 比對（41 支程式 × 1500 cycle）結果完全相同，沒有增加 stall。記憶體大小以 `IMEM_ADDR_WIDTH` / `DMEM_ADDR_WIDTH` 參數化（預設 12 = 4 KB，14 = 16 KB 已通過同一組測試）。
 
 **Stage 2b（規劃中）— Block Memory Generator + AXI BRAM Controller**：IMEM/DMEM 改為 true dual-port BRAM，一個埠給 CPU、另一個埠接 AXI BRAM Controller；IF 階段改成同步讀取（`addr = pc_next`、stall 時保持輸出）。
@@ -408,6 +416,13 @@ RV32I CPU
 - [x] Stage 2a：pipeline 同步讀取 IMEM/DMEM（`tb_bram_timing`、既有測試全過）
 - [ ] Stage 2a 上板驗證與重新量測資源／時序（預期出現 BRAM 用量）
 - [ ] Stage 2b：Block Memory Generator + AXI BRAM Controller、PS 直接存取 IMEM/DMEM
+=======
+**Stage 2（規劃中）— 真正的 BRAM + AXI BRAM Controller**：IMEM/DMEM 改為 true dual-port BRAM，一個埠給 CPU、另一個埠接 AXI BRAM Controller；IF 階段改成同步讀取（`addr = pc_next`、stall 時保持輸出）。
+
+- [x] Stage 1：PS 經 AXI 載入程式（`tb_axi_imem_load`）
+- [ ] Stage 1 上板驗證（Notebook v4：L1~L7）
+- [ ] Stage 2：BRAM + AXI BRAM Controller、同步讀取 IF 階段
+>>>>>>> bac961d7efc5fdee3ac42950da2f5d60c0faaf4e
 - [ ] 驗證記憶體初始化、存取仲裁與 CPU/PS 控制權
 
 ## Technical Topics
