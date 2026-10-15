@@ -5,7 +5,9 @@
 `timescale 1ns / 1ps
 
 module rv32i_pipeline #(
-    parameter IMEM_FILE = "program.hex"
+    parameter IMEM_FILE       = "program.hex",
+    parameter IMEM_ADDR_WIDTH = 12,   // byte-address bits: 12 -> 4 KB (1024 words); 14 -> 16 KB
+    parameter DMEM_ADDR_WIDTH = 12
 )(
     input  wire        clk,
     input  wire        rst_n,
@@ -20,7 +22,7 @@ module rv32i_pipeline #(
     output wire [31:0] illegal_pc_out,   // PC of the first such instruction
     // instruction-memory write port (driven by the AXI wrapper while rst_n=0)
     input  wire        imem_we,
-    input  wire [9:0]  imem_waddr,       // word index
+    input  wire [IMEM_ADDR_WIDTH-3:0] imem_waddr,   // word index
     input  wire [31:0] imem_wdata
 );
     // ============================================================
@@ -29,12 +31,14 @@ module rv32i_pipeline #(
     reg  [31:0] pc;
     wire [31:0] pc_plus4 = pc + 32'd4;
     wire [31:0] if_instr;
+    wire [31:0] pc_next;          // defined in the PC-update section below
 
     imem #(
-        .ADDR_WIDTH(12),
+        .ADDR_WIDTH(IMEM_ADDR_WIDTH),
         .MEM_FILE(IMEM_FILE)
     ) imem_inst (
-        .addr  (pc),
+        .clk   (clk),
+        .addr  (pc_next),          // synchronous read: address the NEXT pc so instr lines up with pc
         .instr (if_instr),
         .wr_clk (clk),
         .wr_en  (imem_we),
@@ -341,17 +345,23 @@ module rv32i_pipeline #(
     // MEM stage  data memory
     // ============================================================
     wire [31:0] dmem_rdata;
-    wire        mem_write_eff = ex_mem_valid && ex_mem_mem_write;
+    // Data memory is BRAM-style (synchronous read, 1 cycle). Address, write data and write enable are driven from the
+    // EX stage; the read data then shows up in the MEM stage, exactly when mem_wb_reg needs it.
+    //  - a dedicated adder (rs1 + imm) feeds the address, so the MUL/ALU path is not extended
+    //  - a store may commit in EX: the instruction in EX is never speculative (branches resolve in EX and only
+    //    flush YOUNGER instructions), so a load right behind a store reads the new value without any bypass.
+    wire [31:0] ex_mem_addr = fwd_rs1 + ex_imm;
+    wire        mem_write_eff = ex_valid && ex_mem_write;
 
     dmem #(
-        .ADDR_WIDTH(12)
+        .ADDR_WIDTH(DMEM_ADDR_WIDTH)
     ) dmem_inst (
         .clk       (clk),
         .rst_n     (rst_n),
-        .mem_read  (ex_mem_mem_read),
+        .mem_read  (ex_mem_read),
         .mem_write (mem_write_eff),
-        .addr      (ex_mem_alu_result),
-        .wdata     (ex_mem_store_data),
+        .addr      (ex_mem_addr),
+        .wdata     (ex_store_data),
         .rdata     (dmem_rdata)
     );
 
@@ -437,15 +447,15 @@ module rv32i_pipeline #(
     // ============================================================
     // PC update  (priority: reset > flush > stall > normal)
     // ============================================================
+    // pc_next is also the (synchronous-read) IMEM address, so it is computed combinationally:
+    //   stall -> hold pc (IMEM re-reads the same word, instr stays valid)
+    assign pc_next = !rst_n    ? 32'h00000000 :
+                     flush     ? redirect_pc  :
+                     if_id_stall ? pc         : pc_plus4;
+
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            pc <= 32'h00000000;
-        end else if (flush) begin
-            pc <= redirect_pc;
-        end else if (!if_id_stall) begin
-            pc <= pc_plus4;
-        end
-        // if stall: hold pc
+        if (!rst_n) pc <= 32'h00000000;
+        else        pc <= pc_next;
     end
 
     // ============================================================

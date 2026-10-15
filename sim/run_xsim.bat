@@ -20,7 +20,7 @@ if not exist .xsim_work mkdir .xsim_work
 set SRCS=
 for %%F in (..\src\*.v) do set SRCS=!SRCS! %%F
 set SRCS=!SRCS! ..\axi\rv32i_pipelined_cpu_v1_0_S00_AXI.v
-set TBS=tb_rv32i_pipeline tb_jalr tb_extra_branches tb_load_use_branch tb_illegal tb_zbb_unit tb_zbb_prog tb_board_program tb_imem_default tb_axi_imem_load
+set TBS=tb_rv32i_pipeline tb_jalr tb_extra_branches tb_load_use_branch tb_illegal tb_zbb_unit tb_zbb_prog tb_board_program tb_imem_default tb_axi_imem_load tb_bram_timing
 set NFAIL=0
 for %%T in (%TBS%) do (
   echo ==== %%T

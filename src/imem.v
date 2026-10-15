@@ -1,12 +1,14 @@
-// imem.v instruction memory, parameterized, flat address range
+// imem.v instruction memory (BRAM-style): SYNCHRONOUS read, 1-cycle latency. Drive addr with pc_next so
+// that instr is valid in the same cycle as the pc register (see rv32i_pipeline.v IF stage).
 `timescale 1ns / 1ps
 
 module imem #(
     parameter ADDR_WIDTH = 12,
     parameter MEM_FILE    = "program.hex"
 )(
-    input  wire [31:0] addr,
-    output wire [31:0] instr,
+    input  wire        clk,
+    input  wire [31:0] addr,           // address of the instruction to appear on instr NEXT cycle
+    output reg  [31:0] instr,
     // optional write port (Phase 4 Stage 1: PS loads programs over AXI while CPU is in reset)
     input  wire                    wr_clk,
     input  wire                    wr_en,
@@ -169,7 +171,9 @@ module imem #(
     end
 
     // word-addressed, only low (ADDR_WIDTH-2) bits matter
-    assign instr = mem[addr[ADDR_WIDTH-1:2]];
+    // synchronous read (no output register stage beyond this one -> read latency 1, like BMG with output reg disabled)
+    always @(posedge clk)
+        instr <= mem[addr[ADDR_WIDTH-1:2]];
 
     // synchronous write, asynchronous read -> still maps to Distributed RAM (no pipeline change)
     always @(posedge wr_clk)

@@ -1,4 +1,5 @@
-// dmem.v data memory, combinational read, synchronous write
+// dmem.v data memory (BRAM-style): synchronous write and SYNCHRONOUS read (latency 1, read-first).
+// Driven from the EX stage: addr/wdata/mem_write are the EX-stage values, rdata is valid in the MEM stage.
 `timescale 1ns / 1ps
 
 module dmem #(
@@ -10,7 +11,7 @@ module dmem #(
     input  wire        mem_write,
     input  wire [31:0] addr,
     input  wire [31:0] wdata,
-    output wire [31:0] rdata
+    output reg  [31:0] rdata
 );
     localparam DEPTH = (1 << ADDR_WIDTH);
     reg [31:0] mem [0:DEPTH-1];
@@ -21,15 +22,11 @@ module dmem #(
             mem[i] = 32'h00000000;
     end
 
-    // synchronous write, combinational read (so load data is available
-    // in the same MEM cycle and flows into MEM/WB).
-    // NOTE: no reset on the memory array resets prevent BRAM/distributed
-    // RAM inference. The array is initialized via the initial block above.
+    // Synchronous write + synchronous read (read-first). No reset on the array (keeps BRAM inference).
+    // mem_read is unused: the read port is always enabled, rdata is only consumed by loads.
     always @(posedge clk) begin
-        if (mem_write) begin
+        if (mem_write)
             mem[addr[ADDR_WIDTH-1:2]] <= wdata;
-        end
+        rdata <= mem[addr[ADDR_WIDTH-1:2]];
     end
-
-    assign rdata = mem[addr[ADDR_WIDTH-1:2]];
 endmodule
