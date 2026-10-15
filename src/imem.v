@@ -6,7 +6,12 @@ module imem #(
     parameter MEM_FILE    = "program.hex"
 )(
     input  wire [31:0] addr,
-    output wire [31:0] instr
+    output wire [31:0] instr,
+    // optional write port (Phase 4 Stage 1: PS loads programs over AXI while CPU is in reset)
+    input  wire                    wr_clk,
+    input  wire                    wr_en,
+    input  wire [ADDR_WIDTH-3:0]   wr_addr,   // word index
+    input  wire [31:0]             wr_data
 );
     localparam DEPTH = (1 << ADDR_WIDTH);
     reg [31:0] mem [0:DEPTH-1];
@@ -165,4 +170,9 @@ module imem #(
 
     // word-addressed, only low (ADDR_WIDTH-2) bits matter
     assign instr = mem[addr[ADDR_WIDTH-1:2]];
+
+    // synchronous write, asynchronous read -> still maps to Distributed RAM (no pipeline change)
+    always @(posedge wr_clk)
+        if (wr_en === 1'b1)   // === so an unconnected (z) port in old testbenches is ignored
+            mem[wr_addr] <= wr_data;
 endmodule

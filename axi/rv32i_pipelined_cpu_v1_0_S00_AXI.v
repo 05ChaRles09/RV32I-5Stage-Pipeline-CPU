@@ -248,6 +248,33 @@
 	  end
 	end
 
+	// ---------------- Instruction memory loader (Phase 4 Stage 1) ----------------
+	// 0x30 IMEM_ADDR : word index (0..1023)
+	// 0x34 IMEM_DATA : write -> imem[IMEM_ADDR] = data, IMEM_ADDR auto-increments. Accepted only while CTRL.rst_n = 0.
+	// 0x38 IMEM_STATUS: [31] sticky "write rejected because CPU running" (clear by writing 0x38), [15:0] words written
+	reg [9:0]  imem_idx;
+	reg [15:0] imem_cnt;
+	reg        imem_rej;
+	wire       imem_sel_data = slv_reg_wren && axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hD && S_AXI_WSTRB == 4'hF;
+	wire       imem_we_w     = imem_sel_data && !slv_reg0[0];
+	always @( posedge S_AXI_ACLK )
+	begin
+	  if ( S_AXI_ARESETN == 1'b0 ) begin
+	    imem_idx <= 10'd0; imem_cnt <= 16'd0; imem_rej <= 1'b0;
+	  end else begin
+	    if (slv_reg_wren && axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hC && S_AXI_WSTRB[0])
+	      imem_idx <= S_AXI_WDATA[9:0];
+	    else if (imem_we_w) begin
+	      imem_idx <= imem_idx + 10'd1;
+	      imem_cnt <= imem_cnt + 16'd1;
+	    end
+	    if (imem_sel_data && slv_reg0[0]) imem_rej <= 1'b1;
+	    if (slv_reg_wren && axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hE) begin
+	      imem_rej <= 1'b0; imem_cnt <= 16'd0;
+	    end
+	  end
+	end
+
 	// Implement write response logic generation
 	// The write response and response valid signals are asserted by the slave 
 	// when axi_wready, S_AXI_WVALID, axi_wready and S_AXI_WVALID are asserted.  
@@ -361,7 +388,10 @@
 	        4'h8 : reg_data_out = {26'b0, tr_meta_mem[tr_ridx]};  // [5:1]=wb_rd, [0]=wb_we
         4'h9 : reg_data_out = {31'b0, illegal_out_wire};       // 0x24 sticky illegal flag
         4'hA : reg_data_out = illegal_pc_out_wire;             // 0x28 PC of first illegal instr
-        4'hB : reg_data_out = 32'h0000_0007;                   // 0x2C feature bits: [0]=illegal regs, [1]=RV32M MUL, [2]=custom XDOTP16
+        4'hB : reg_data_out = 32'h0000_000F;                   // 0x2C feature bits: [0]=illegal regs, [1]=RV32M MUL, [2]=custom XDOTP16, [3]=PS-writable IMEM
+        4'hC : reg_data_out = {22'b0, imem_idx};               // 0x30 IMEM_ADDR (word index)
+        4'hD : reg_data_out = 32'h0;                           // 0x34 IMEM_DATA (write-only)
+        4'hE : reg_data_out = {imem_rej, 15'b0, imem_cnt};     // 0x38 IMEM_STATUS: [31]=write rejected (CPU was running), [15:0]=words written
 	        default : reg_data_out = 0;
 	      endcase
 	end
@@ -423,7 +453,10 @@
         .wb_we_out(wb_we_out_wire),
         .dmem_rdata_out(dmem_rdata_out_wire),
         .illegal_out(illegal_out_wire),
-        .illegal_pc_out(illegal_pc_out_wire)
+        .illegal_pc_out(illegal_pc_out_wire),
+        .imem_we(imem_we_w),
+        .imem_waddr(imem_idx),
+        .imem_wdata(S_AXI_WDATA)
     );
     
 	// User logic ends

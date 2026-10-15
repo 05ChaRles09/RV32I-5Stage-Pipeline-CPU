@@ -17,7 +17,11 @@ module rv32i_pipeline #(
     output wire [31:0] dmem_rdata_out,   // data memory read data
     // illegal-instruction reporting (sticky until reset)
     output wire        illegal_out,      // 1 once an unsupported instruction has been executed
-    output wire [31:0] illegal_pc_out    // PC of the first such instruction
+    output wire [31:0] illegal_pc_out,   // PC of the first such instruction
+    // instruction-memory write port (driven by the AXI wrapper while rst_n=0)
+    input  wire        imem_we,
+    input  wire [9:0]  imem_waddr,       // word index
+    input  wire [31:0] imem_wdata
 );
     // ============================================================
     // IF stage
@@ -31,7 +35,11 @@ module rv32i_pipeline #(
         .MEM_FILE(IMEM_FILE)
     ) imem_inst (
         .addr  (pc),
-        .instr (if_instr)
+        .instr (if_instr),
+        .wr_clk (clk),
+        .wr_en  (imem_we),
+        .wr_addr(imem_waddr),
+        .wr_data(imem_wdata)
     );
 
     // ============================================================
