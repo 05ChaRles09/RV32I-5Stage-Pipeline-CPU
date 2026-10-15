@@ -422,7 +422,6 @@ RV32I CPU
 - [x] Stage 1：PS 經 AXI 載入程式（`tb_axi_imem_load`）
 - [ ] Stage 1 上板驗證（Notebook v4：L1~L7）
 - [ ] Stage 2：BRAM + AXI BRAM Controller、同步讀取 IF 階段
->>>>>>> bac961d7efc5fdee3ac42950da2f5d60c0faaf4e
 - [ ] 驗證記憶體初始化、存取仲裁與 CPU/PS 控制權
 
 ## Technical Topics
