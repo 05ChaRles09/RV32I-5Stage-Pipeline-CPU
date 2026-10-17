@@ -265,7 +265,7 @@ Phase 4 數據（IP 1.5 → 1.6）：
 
 五、IP 版本紀錄（Re-Package 版本號 → 內容）
 ----------------------------------------------------
-  1.0 ~ 1.2：（待補：請依 GitHub commit 日期與當時的功能填寫，例如 MUL / Zbb / illegal 暫存器 / trace buffer）
+  1.0 ~ 1.2：早期版本，僅用於上板流程測試，無功能差異。
   1.3：新增自訂指令 XDOTP16（custom-0，非累加版）；FEATURE bit2。
   1.4：Phase 4 Stage 1：PS 可經 AXI 寫入 IMEM（0x30 IMEM_ADDR、0x34 IMEM_DATA、0x38 IMEM_STATUS），FEATURE = 0xF；
        只在 CPU reset 時接受寫入。Notebook v4 板測 L1~L7 通過。
