@@ -197,7 +197,7 @@ SIZE = 0x10000
 ├── tools/                Python 黃金模型與測試資料產生器（選用，Vivado 流程不需要）
 ├── pynq_5-stage-pipeline-CPU_TEST/
 │                         板上測試 Notebook、.bit / .hwh、測試報告 JSON
-├── docs/                 Vivado 使用指南、Stage 2b 操作與踩雷、IP 打包踩雷紀錄、開發紀錄與 Bug 整理
+├── docs/                 Vivado 使用指南、Stage 2b 操作與踩雷、IP 打包踩雷紀錄、開發紀錄與 Bug 整理、專題成果報告素材（PROJECT_REPORT_MATERIALS.md）
 │   └── vivado_reports/   各 IP 版本的 util / timing / power 原始報告（ip1.5、ip1.6）
 ├── constrs/              constraints.xdc（整合設計：不需額外約束，內含說明）、constraints_standalone.xdc（單獨合成 CPU 核心用）
 └── README.md
