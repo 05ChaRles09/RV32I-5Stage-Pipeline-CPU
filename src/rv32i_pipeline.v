@@ -7,7 +7,8 @@
 module rv32i_pipeline #(
     parameter IMEM_FILE       = "program.hex",
     parameter IMEM_ADDR_WIDTH = 12,   // byte-address bits: 12 -> 4 KB (1024 words); 14 -> 16 KB
-    parameter DMEM_ADDR_WIDTH = 12
+    parameter DMEM_ADDR_WIDTH = 12,
+    parameter EXTERNAL_MEM    = 0     // 1: IMEM/DMEM are external BRAMs (Block Memory Generator) reached through the ports below
 )(
     input  wire        clk,
     input  wire        rst_n,
@@ -20,10 +21,15 @@ module rv32i_pipeline #(
     // illegal-instruction reporting (sticky until reset)
     output wire        illegal_out,      // 1 once an unsupported instruction has been executed
     output wire [31:0] illegal_pc_out,   // PC of the first such instruction
-    // instruction-memory write port (driven by the AXI wrapper while rst_n=0)
-    input  wire        imem_we,
-    input  wire [IMEM_ADDR_WIDTH-3:0] imem_waddr,   // word index
-    input  wire [31:0] imem_wdata
+    // external memory ports (used when EXTERNAL_MEM=1; always driven, harmless when the internal memories are used)
+    //   IMEM: read-only. imem_addr = BYTE address of the NEXT pc; imem_rdata arrives one cycle later (aligned with pc)
+    output wire [31:0] imem_addr,
+    input  wire [31:0] imem_rdata,
+    //   DMEM: driven from EX. dmem_addr = BYTE address, dmem_we = word write enable; read data arrives one cycle later (MEM stage)
+    output wire [31:0] dmem_addr,
+    output wire [31:0] dmem_wdata,
+    output wire        dmem_we,
+    input  wire [31:0] dmem_ext_rdata
 );
     // ============================================================
     // IF stage
@@ -35,16 +41,15 @@ module rv32i_pipeline #(
 
     imem #(
         .ADDR_WIDTH(IMEM_ADDR_WIDTH),
-        .MEM_FILE(IMEM_FILE)
+        .MEM_FILE(IMEM_FILE),
+        .EXTERNAL(EXTERNAL_MEM)
     ) imem_inst (
         .clk   (clk),
         .addr  (pc_next),          // synchronous read: address the NEXT pc so instr lines up with pc
         .instr (if_instr),
-        .wr_clk (clk),
-        .wr_en  (imem_we),
-        .wr_addr(imem_waddr),
-        .wr_data(imem_wdata)
+        .ext_rdata(imem_rdata)
     );
+    assign imem_addr = pc_next;
 
     // ============================================================
     // IF/ID register
@@ -354,7 +359,8 @@ module rv32i_pipeline #(
     wire        mem_write_eff = ex_valid && ex_mem_write;
 
     dmem #(
-        .ADDR_WIDTH(DMEM_ADDR_WIDTH)
+        .ADDR_WIDTH(DMEM_ADDR_WIDTH),
+        .EXTERNAL(EXTERNAL_MEM)
     ) dmem_inst (
         .clk       (clk),
         .rst_n     (rst_n),
@@ -362,8 +368,12 @@ module rv32i_pipeline #(
         .mem_write (mem_write_eff),
         .addr      (ex_mem_addr),
         .wdata     (ex_store_data),
-        .rdata     (dmem_rdata)
+        .rdata     (dmem_rdata),
+        .ext_rdata (dmem_ext_rdata)
     );
+    assign dmem_addr  = ex_mem_addr;
+    assign dmem_wdata = ex_store_data;
+    assign dmem_we    = mem_write_eff;
 
     // ============================================================
     // MEM/WB register

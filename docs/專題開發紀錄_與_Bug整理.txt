@@ -2,7 +2,7 @@ RV32I 五級管線 CPU（PYNQ-ZU）— 開發紀錄與 Bug 整理
 ====================================================
 專案：RV32I-5Stage-Pipeline-CPU（GitHub: 05ChaRles09/RV32I-5Stage-Pipeline-CPU）
 平台：PYNQ-ZU、Vivado 2022.2、AXI4-Lite IP
-整理日期：2026-10-14（依對話紀錄整理；「待確認」處為尚未量測／驗證的項目）
+整理日期：2026-10-17（依對話紀錄整理；「待確認」處為尚未量測／驗證的項目）
 
 
 一、專案現況總覽
@@ -28,7 +28,9 @@ RV32I 五級管線 CPU（PYNQ-ZU）— 開發紀錄與 Bug 整理
      0x20 T_META  [5:1]=wb_rd、[0]=wb_we
      0x24 ILLEGAL     非法指令 sticky 旗標
      0x28 ILLEGAL_PC  第一個非法指令的 PC
-     0x2C FEATURE     bit0=illegal 暫存器、bit1=MUL、bit2=XDOTP16（目前應讀到 0x7）
+     0x2C FEATURE     bit0=illegal 暫存器、bit1=MUL、bit2=XDOTP16、bit4=外部 BRAM（IP 1.6 起讀到 0x17）
+6. 記憶體（IP 1.6）：IMEM / DMEM 各 4 KB，為 Block Memory Generator（Stand Alone、True Dual Port）；
+   port B 給 CPU，port A 經 AXI BRAM Controller 給 PS（IMEM 0x80010000、DMEM 0x80020000，各 4K）。
 
 
 二、時間線
@@ -69,6 +71,15 @@ RV32I 五級管線 CPU（PYNQ-ZU）— 開發紀錄與 Bug 整理
   - 第一次上板：XDOTP16 前 7 筆結果正確，但程式被截斷 → 找到 imem.v 的 Bug 10（見下）。
   - 修正 imem.v 後重新 Implementation / Bitstream / 上板：Notebook v3 實板 40/40 ALL PASS（2026-10-14）。
     （spin PC 0x21C、102 筆寫回與黃金模型一致、XDOTP16 10 筆全部正確、illegal 第一個 PC=0x1F4）
+
+階段 8  Phase 4：PS 可存取 IMEM / DMEM（AXI / BRAM）
+  - Stage 1（IP 1.4）：imem 加寫入埠，PS 經 AXI 暫存器 0x30/0x34/0x38 在 reset 時載入程式；Notebook v4 L1~L7 通過。
+  - Stage 2a（IP 1.5）：pipeline 改為 BRAM 同步讀取（IMEM 位址 = pc_next；DMEM 讀寫移到 EX，store 於 EX 提交）；
+    逐 cycle 與前一版完全相同（41 支程式 x 1500 cycle）；上板 48 項全過。
+  - Stage 2b（IP 1.6）：CPU IP 對外開兩組 BRAM master 介面，接 BMG + AXI BRAM Controller；移除 1.4 的載入暫存器。
+    Vivado 整合踩了幾個坑（見 Bug 11~13），修正後 Notebook v5 實板 52/52 全過（2026-10-17）：
+    T1~T8（40 項）+ L1 FEATURE=0x17、L2 COE 初始化、L3 PS 讀寫 DMEM、L4~L7 PS 載入程式執行（含 40 支隨機程式、8470 筆寫回）、
+    L8 執行中 PS 讀取、L9 還原。
 
 
 三、Bug 與解決方法（依發生順序）
@@ -149,22 +160,70 @@ RV32I 五級管線 CPU（PYNQ-ZU）— 開發紀錄與 Bug 整理
     - 上板用的是「合成進 bitstream 的預設內容」，模擬若只從檔案載入就等於沒測到。
     - 程式長度、起點等「魔術數字」要與產生器同步（或改成不依賴長度的寫法）。
 
+【Bug 11】PS 批次寫入 IMEM 後，程式的第一個指令（word 0）變成 NOP（IP 1.6 上板）
+  現象（Notebook v5 第一次上板）：
+    - T1~T8、L1~L3 全過（COE 開機程式、PS 讀寫 DMEM 都正常），但 L4、L5、L6a、L7、L8 失敗。
+    - 失敗的共同特徵：寫回筆數少 1 筆，第一個指令沒有生效（例如程式 addi x1,x0,42 / addi x2,x0,1 / sub x3,x1,x2 / sw，
+      trace 只有 x2=1、x3=-1，DMEM[0]=0xFFFFFFFF，預期 41）。L6b 的整塊 DMEM 仍然對，是因為板測程式後面會重設 x1。
+  診斷（逐步縮小）：
+    1. 載入後讀回 imem[0:6]：word 0 = 0x13（NOP），word 1~4 正確。
+    2. 載入後再單獨寫一次 word 0，trace 立刻出現 x1=42、DMEM[0]=41，證明 CPU / BMG 讀取路徑沒問題，是 PS 寫入端的問題。
+    3. 用 1024 字圖樣批次寫 IMEM：只有 word 0 不一致，讀回值恰好等於 pat[1020]（最後一組 16 位元組的第一個字）；
+       只寫 8 字時，word 0 變成 word 4 的值。規律：每個 16 位元組對齊的寫入（字索引為 4 的倍數）
+       除了寫到自己的位置，還會多寫一份到 word 0，最後 word 0 留下最後一次的值。單獨寫 word 0 則正常。
+    4. DMEM 用同樣的批次寫入卻全部正確。用 Tcl 比對 imem_ctrl 與 dmem_ctrl、imem_bmg 與 dmem_bmg 的所有 CONFIG 屬性，
+       除了名稱與 COE 之外只有一項不同：imem_bmg 的 Enable_A = Always_Enabled，dmem_bmg 的 Enable_A = Use_ENA_Pin。
+  原因：
+    imem_bmg 的 Enable Port Type 設成 Always Enabled（與 dmem_bmg 唯一的設定差異；改回 Use ENA Pin 後問題消失，已實測）。
+    推測機制：BMG 沒有 ENA 腳位，AXI BRAM Controller 的 en 沒有地方接，controller 在每次傳輸的第一個週期
+    we 已拉高、位址還在更新，沒有 ENA 擋住就造成誤寫（機制是推測，修正結果是實測確認的）。
+    操作指引初稿把 Stand Alone 的 Enable Port Type 寫成 Always Enabled（後來更正），imem_bmg 仍留在舊設定。
+  解法：
+    imem_bmg（Port A、Port B）的 Enable Port Type 改為 Use ENA Pin / Use ENB Pin，重新 Generate / Bitstream。
+    不需要重新打包 CPU IP（版本仍是 1.6）。用 Notebook v5 原樣（沒有補寫 word 0）重跑：52/52 全過。
+  教訓：
+    - 兩顆設計上對稱的記憶體，用 Tcl 比對所有 CONFIG 屬性，可以直接找到不對稱的設定。
+    - 只靠「COE 開機程式能跑」不夠；要用 PS 重新載入程式、並與黃金模型逐筆比對，才抓得到這種只影響 word 0 的錯誤。
+    - 模擬用的 BMG 行為模型沒有這種 controller 與 ENA 的互動，這類問題只有上板才會出現。
+
+【Bug 12】BMG 在 BRAM Controller 模式下，Write Depth 改不動、Load Init File 灰色
+  現象：depth 一直是 2048（8 KB）或 8192，RSTA Pin 勾選且鎖住，Load Init File 與 COE 欄位灰色，Tcl 設定被忽略
+        （IP_Flow 19-3374：disabled parameter）。
+  原因：BRAM Controller 模式下，深度由 AXI BRAM Controller 的位址範圍推導，初始化檔被鎖住。
+  解法：
+    - 需要 COE（imem）：改用 Stand Alone 模式，設定 True Dual Port、寬度 32、深度 1024、勾 32-bit address interface、
+      Byte Write 啟用（Byte Size 8）、Output Register 不勾、RSTA/RSTB Pin 不勾、Enable Port Type = Use ENA/ENB Pin；
+      Load Init File 選 imem_board_program.coe，Fill Remaining 填 13（NOP）。
+    - dmem 也改成 Stand Alone，讓兩顆設定一致，深度不再受 controller 影響。
+  補充：Common Clock 不勾；Operating Mode 選 Write First（Read First 在此組態不可選，功能上等價：
+        CPU 不會在同一埠同一週期讀寫同一位址）。
+
+【Bug 13】Address Editor 的位址被重設；Connection Automation 多出 BMG
+  現象：修改 BMG 設定、Validate 之後，imem_ctrl / dmem_ctrl 的位址被 Vivado 重設為 0x81000000 / 0x82000000；
+        Connection Automation 也自動多長出一顆 dmem_ctrl_bram；AXI BRAM Controller 預設有 PORTB。
+  解法：位址手動設回 0x80010000 / 0x80020000（Range 4K），用 Tcl（get_bd_addr_segs）檢查；
+        刪除多出的 BMG；AXI BRAM Controller 的 Number of BRAM interfaces 設為 1。
+  另有兩個提示：
+    - BD 41-759（imem_bram_dout / dmem_bram_dout 未連接）要把 CPU IP 的 BRAM 介面接到 BMG 的 BRAM_PORTB。
+    - BD 41-237（MASTER_TYPE 不一致）是 BMG 為 BRAM Controller 模式時出現的提示性警告，不影響功能，不值得為此重新打包 IP。
+
 【事件】GitHub 本機落後遠端
   現象：本機最後 commit 為 10/10，遠端已有更新；README 兩邊內容不同。
   做法：以遠端最新版為底合併；git fetch + git reset origin/main（mixed reset，保留工作目錄）；
         換行（LF/CRLF）警告可忽略；push 被拒時用 pull --rebase，不用 --force。
 
 【已知待處理】
-  - constrs/constraints.xdc 是舊版（port 名稱 clk、rst_n），與目前 BD 設計不對應，尚未更新。
-  - GitHub 上 pynq_5-stage-pipeline-CPU_TEST/ 的 bit/hwh 要換成含 XDOTP16 的新 build。
+  - GitHub 上 pynq_5-stage-pipeline-CPU_TEST/ 的 bit/hwh 要換成 IP 1.6 的新 build（成對、同一次 Implementation）。
+  - 目前只在 CPU reset 時由 PS 載入程式；CPU 執行中 PS 寫入 IMEM / DMEM 的行為尚未驗證。
 
 
 四、驗證紀錄
 ----------------------------------------------------
-模擬（iverilog -g2005，共 9 個 testbench，皆 PASS）：
+模擬（iverilog -g2005，共 11 個 testbench，皆 PASS）：
   tb_rv32i_pipeline、tb_jalr、tb_extra_branches、tb_load_use_branch、tb_illegal、
   tb_zbb_unit、tb_zbb_prog（40 支程式，含 MUL 與 XDOTP16）、
-  tb_board_program（上板 136 字程式整合驗證）、tb_imem_default（內建程式完整性）。
+  tb_board_program（上板 136 字程式整合驗證）、tb_imem_default（內建程式完整性）、
+  tb_bram_timing（BRAM 同步讀取時序邊界）、tb_axi_bram_system（CPU IP + BMG 行為模型的系統層級測試）。
 突變測試（確認測試有效）：
   - MUL 改成 A+B → tb_zbb_prog 失敗。
   - XDOTP16 改成 xp0 - xp1 或高半部誤接 → tb_zbb_prog 與 tb_board_program 皆失敗。
@@ -183,16 +242,61 @@ Vivado 數據：
     rv32i_pipelined_cpu_0 0.027 W（約 1%）、Junction 31.1 C。PL 時脈 100 MHz；依 WNS +1.977 ns 粗估上限約 125 MHz（估算）。
 
 
-五、後續待辦
+Phase 4 數據（IP 1.4 → 1.5）：
+  IP 1.4（Stage 1，LUTRAM、PS 可寫入 IMEM）→ IP 1.5（Stage 2a，IMEM/DMEM BRAM 同步讀取），routed、100 MHz：
+    CLB LUTs 3877 → 3286；LUT as Distributed RAM 864 → 352；CLB Registers 2174 → 2160；Block RAM 0 → 2 (RAMB36)；DSP48E2 5 → 5。
+    WNS +1.977 → +2.125 ns；WHS +0.001 → +0.019 ns；Total power 2.613 → 2.628 W（估算，CPU IP 0.027 → 0.042 W）。
+    setup 關鍵路徑仍是 EX 的 forwarding → 乘法器（3 DSP）→ alu_result（資料路徑 7.594 ns），BRAM 位址路徑不是關鍵路徑。
+
+
+Phase 4 數據（IP 1.5 → 1.6）：
+  IP 1.5（內部 BRAM）→ IP 1.6（BMG + AXI BRAM Controller，整個 design_1_wrapper），routed、100 MHz、xczu5eg-sfvc784-1-i：
+    CLB LUTs 3286 → 4650（+1364）；LUT as Distributed RAM 352 → 352；CLB Registers 2160 → 3691（+1531）；
+    Block RAM 2 → 2 (RAMB36)；DSP48E2 5 → 5；CARRY8 58。
+    WNS +2.125 → +1.979 ns；WHS +0.019 → +0.015 ns；Total power 2.628 → 2.641 W（估算，Confidence Medium）。
+    LUT / FF 增加的主因是兩個 AXI BRAM Controller 與多出兩個 Master 埠的 AXI Interconnect（推測，未做逐模組拆分）。
+    setup 關鍵路徑仍是 EX forwarding → 乘法器（DSP48E2 串接）→ alu_result（資料路徑 7.745 ns、19 級邏輯）；
+    依 WNS +1.979 ns 粗估上限約 125 MHz（估算）。All user specified timing constraints are met。
+    功耗分項：PS8 2.158 W、CPU IP 0.039 W、dmem_bmg 0.003 W、imem_bmg 0.002 W、兩個 AXI BRAM Controller 各 0.002 W、
+    ps8_0_axi_periph 0.009 W；Dynamic 2.216 W、Static 0.425 W、Junction 31.1 C。
+    原始報告：docs/vivado_reports/ip1.5/、ip1.6/。
+  實板（Notebook v5，IP 1.6）：52/52 PASS（cpu_test_report_v5_ip1.6_52of52.json）。
+
+
+五、IP 版本紀錄（Re-Package 版本號 → 內容）
+----------------------------------------------------
+  1.0 ~ 1.2：（待補：請依 GitHub commit 日期與當時的功能填寫，例如 MUL / Zbb / illegal 暫存器 / trace buffer）
+  1.3：新增自訂指令 XDOTP16（custom-0，非累加版）；FEATURE bit2。
+  1.4：Phase 4 Stage 1：PS 可經 AXI 寫入 IMEM（0x30 IMEM_ADDR、0x34 IMEM_DATA、0x38 IMEM_STATUS），FEATURE = 0xF；
+       只在 CPU reset 時接受寫入。Notebook v4 板測 L1~L7 通過。
+  1.5：Phase 4 Stage 2a：pipeline 改 BRAM 同步讀取（IMEM 位址接 pc_next；DMEM 讀寫移到 EX 階段，store 於 EX 提交）；
+       AXI 暫存器不變。逐 cycle 與前一版完全相同（41 支程式 x 1500 cycle）。板測 48 項全過；Vivado 結果見上。
+  1.6：Phase 4 Stage 2b：CPU IP 對外開兩組 BRAM master 介面（imem_bram_*、dmem_bram_*，32 位元位元組位址、we[3:0]、讀取延遲 1），
+       接 Block Memory Generator（true dual port，port B 給 CPU）+ AXI BRAM Controller（port A 給 PS）。
+       移除 1.4 的 AXI 載入暫存器（0x30/0x34/0x38）；FEATURE = 0x17（bit4 = 外部 BRAM）；預設程式改由 COE 初始化。
+       新增 EXTERNAL_MEM 參數（IP 預設 1；獨立 rv32i_pipeline 預設 0，原 10 個 testbench 不變）。
+       模擬：tb_axi_bram_system（CPU IP + BMG 行為模型）通過，4 種突變（store 只寫低位元組、DMEM 字位址、IMEM 不超前取指、IMEM 誤開寫入）皆被抓到。
+       BMG 設定：imem_bmg 與 dmem_bmg 皆 Stand Alone、True Dual Port、32 位元、深度 1024、32-bit address interface、Byte Write、
+       Output Register 關閉、Enable Port Type = Use ENA/ENB Pin；imem_bmg 載入 COE；AXI BRAM Controller 各 4K（0x80010000、0x80020000）。
+       板測：Notebook v5 共 52 項（T1~T8 + L1~L9）全過（2026-10-17）。
+       Vivado 數據：LUT 4650、FF 3691、DistRAM 352、BRAM 2、DSP 5、WNS +1.979 ns、WHS +0.015 ns、2.641 W（見上方 Phase 4 數據）。
+       踩雷：Bug 11（Enable Port Type = Always Enabled 造成 PS 批次寫入時 word 0 被誤寫；改為 Use ENA Pin 後解決，IP 版本仍為 1.6）、
+       Bug 12（BRAM Controller 模式無法載入 COE / 設定深度）、Bug 13（位址被重設、多出的 BMG）。
+
+
+六、後續待辦
 ----------------------------------------------------
 1. （已完成）套用修正後的 imem.v 重新打包、上板，40/40 PASS。
 2. （已完成）含 XDOTP16 的 WNS/WHS/DSP/LUT/FF 已記錄、功耗，更新 README 與專題報告數據（使用者先前表示報告數據之後再更新）。
-3. 更新 constraints.xdc；GitHub 換上含 XDOTP16 的新 bit/hwh 與本次 imem.v 修正、README 後 commit/push。
+3. （已完成）更新 constraints.xdc。GitHub 換上 IP 1.6 的新 bit/hwh、整合包內的 README 與文件後 commit/push（由使用者操作）。
+3b. （已完成）Phase 4 Stage 1 / 2a / 2b：PS 可載入不同程式並執行，Notebook v5 52/52 PASS。
 4. 選配：XDOTP16 累加版（XDOTP16ACC，需第三個讀取埠與 forwarding/hazard 修改）；
-   Phase 4 的 AXI/BRAM 整合（讓 PS 載入不同程式）；以 FIR 或影像 kernel 比較有無 XDOTP16 的週期數。
+   以 FIR 或影像 kernel 比較有無 XDOTP16 的週期數；riscv-arch-test；記憶體放大到 16 KB；
+   CPU 執行中 PS 寫入記憶體的行為驗證。
+5. 整理專題成果資料（結果報告）：IP 版本紀錄（第五節）、各版 Vivado 數據、板測結果、Bug 與教訓。
 
 
-六、可寫進專題報告的重點（心得）
+七、可寫進專題報告的重點（心得）
 ----------------------------------------------------
 1. 驗證要涵蓋「實際上板的路徑」：模擬若只從檔案載入程式，會漏掉合成進 bitstream 的預設內容。
 2. 測試要有突變測試（故意改壞 RTL 看測試是否會失敗），才能證明測試真的有效。
@@ -203,3 +307,6 @@ Vivado 數據：
    （例如本次一眼看出「前 115 字正確、之後全是 NOP」）。
 5. 設計擴充時先做最小改動版本（不累加版 XDOTP16），並說明累加版的取捨
    （指令數 vs 硬體複雜度與時序）。
+6. 對稱的兩個元件（imem / dmem）用工具比對所有設定，比逐頁檢查畫面更快找到不對稱的設定
+   （Bug 11 就是 Tcl 比對 CONFIG 屬性才定位到 Enable_A）。
+7. 改設計後要用「不同於開機內容的資料」重新載入並與黃金模型逐筆比對；只跑開機程式會漏掉只影響特定位址的錯誤。

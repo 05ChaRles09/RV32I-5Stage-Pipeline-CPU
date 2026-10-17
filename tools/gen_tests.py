@@ -8,7 +8,7 @@ gen_tests.py  產生 Zbb 測試資料，直接輸出到 sim/（平面檔案，�
   sim/zbb_vectors.mem       tb_zbb_unit.v   每筆 4 個字：op a b expected
   sim/zbb_prog.hex          tb_zbb_prog.v   NP 支程式，每支固定 1024 字（不足以 NOP 補齊），依序串接
   sim/zbb_prog_expect.mem   tb_zbb_prog.v   NP 組預期狀態，每組 1056 字：x0..x31 + dmem[0..1023]
-程式內容 = Zbb + MUL directed（每個指令 × 邊界值）+ 隨機 RV32I/Zbb 程式（含 forwarding / load-use / 分支 flush）
+程式內容 = Zbb + MUL + XDOTP16 directed（每個指令 × 邊界值）+ 隨機 RV32I/Zbb 程式（含 forwarding / load-use / 分支 flush）
 """
 import argparse, os, random, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -53,6 +53,10 @@ def gen_directed():
     for a in CORNERS:                                  # RV32M MUL × 邊界運算元
         for b in CORNERS:
             tests.append(li(1, a) + li(2, b) + [asm("mul", 3, 1, 2)])
+    X_C = [0, 1, 0xFFFF, 0x7FFF, 0x8000, 0xFFFF0000, 0x7FFF0000, 0x80000000, 0x80008000, 0x7FFF7FFF, 0x00018000, 0xFFFFFFFF, 0x12345678, 0xDEADBEEF]
+    for a in X_C:                                      # XDOTP16 × 邊界運算元
+        for b in X_C:
+            tests.append(li(1, a) + li(2, b) + [asm("xdotp16", 3, 1, 2)])
     chunks, cur = [], []
     for t in tests:
         if len(cur) + len(t) + 2 > 900:
@@ -69,7 +73,7 @@ def gen_random(seed, n_instr=240):
         prog += li(r, rnd.choice(CORNERS + [rnd.getrandbits(32)] * 3))
     recent = list(range(1, 16))
     pick_src = lambda: rnd.choice(recent[-3:]) if rnd.random() < 0.6 else rnd.randrange(0, 16)
-    base_r, base_i = list(BASE_R) + list(M_R), list(BASE_I)   # M_R = mul
+    base_r, base_i = list(BASE_R) + list(M_R) + list(X_R), list(BASE_I)   # M_R = mul
     while len(prog) < 30 + n_instr:
         rd = rnd.randrange(1, 16)
         k = rnd.random()

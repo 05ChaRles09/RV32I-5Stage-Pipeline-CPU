@@ -4,16 +4,13 @@
 
 module imem #(
     parameter ADDR_WIDTH = 12,
-    parameter MEM_FILE    = "program.hex"
+    parameter MEM_FILE    = "program.hex",
+    parameter EXTERNAL    = 0      // 1: instruction memory lives OUTSIDE (Block Memory Generator); ext_rdata is used
 )(
     input  wire        clk,
     input  wire [31:0] addr,           // address of the instruction to appear on instr NEXT cycle
-    output reg  [31:0] instr,
-    // optional write port (Phase 4 Stage 1: PS loads programs over AXI while CPU is in reset)
-    input  wire                    wr_clk,
-    input  wire                    wr_en,
-    input  wire [ADDR_WIDTH-3:0]   wr_addr,   // word index
-    input  wire [31:0]             wr_data
+    output wire [31:0] instr,
+    input  wire [31:0] ext_rdata       // read data of the external BRAM (only used when EXTERNAL=1)
 );
     localparam DEPTH = (1 << ADDR_WIDTH);
     reg [31:0] mem [0:DEPTH-1];
@@ -170,13 +167,10 @@ module imem #(
         $display("IMEM: mem[0] = %08h", mem[0]);
     end
 
-    // word-addressed, only low (ADDR_WIDTH-2) bits matter
-    // synchronous read (no output register stage beyond this one -> read latency 1, like BMG with output reg disabled)
+    // synchronous read (read latency 1, like a BMG with its output register disabled)
+    // In EXTERNAL mode this array is never read and is optimised away; the program lives in the BMG (COE file / PS).
+    reg [31:0] mem_q;
     always @(posedge clk)
-        instr <= mem[addr[ADDR_WIDTH-1:2]];
-
-    // synchronous write, asynchronous read -> still maps to Distributed RAM (no pipeline change)
-    always @(posedge wr_clk)
-        if (wr_en === 1'b1)   // === so an unconnected (z) port in old testbenches is ignored
-            mem[wr_addr] <= wr_data;
+        mem_q <= mem[addr[ADDR_WIDTH-1:2]];
+    assign instr = EXTERNAL ? ext_rdata : mem_q;
 endmodule

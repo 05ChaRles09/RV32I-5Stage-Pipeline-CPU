@@ -19,7 +19,9 @@ prog = [
     asm("beq", 0, 0, 8),         # 0x2c 一定跳 -> 跳過 0x30
     0x02109133 | ((9 - 2) << 7),  # 0x30 mulh x9,x1,x1 在「錯誤路徑」：被 flush，不可被計入 illegal
     asm("addi", 8, 0, 3),        # 0x34 x8 = 3
-    asm("jal", 0, 0),            # 0x38 spin
+    enc_r(CUSTOM0, 0, 0x01, 10, 1, 1),   # 0x38 custom-0 funct7=1 (illegal) -> x10 stays 0
+    enc_r(CUSTOM0, 1, 0x00, 11, 1, 1),   # 0x3c custom-0 funct3=1 (illegal) -> x11 stays 0
+    asm("jal", 0, 0),            # 0x40 spin
 ]
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sim", "illegal.hex")
 with open(out, "w") as f:

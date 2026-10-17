@@ -1,4 +1,4 @@
-"""gen_board_test.py  產生上板用的 program.hex（RV32I 原測試 + Zbb + MUL + illegal）。
+"""gen_board_test.py  產生上板用的 program.hex（RV32I 原測試 + Zbb + MUL + XDOTP16 + illegal）。
 用法: python gen_board_test.py <out_dir>    （需要同資料夾或 ../repo/tools 的 rv32i_model.py）
 """
 import sys, os
@@ -44,13 +44,25 @@ P += [asm("mul", 15, a, b), asm("mul", 16, a, a), asm("mul", 17, c, 0),         
       asm("bne", 7, 8, 8), asm("addi", 9, 0, 0x3C),                               # 4==4：bne 不跳，執行 addi
       asm("beq", 7, 8, 8), asm("mul", 27, 29, 29),                                # beq 跳過 shadow 的 mul
       asm("addi", 10, 0, 0x2B)]
+# ---- custom XDOTP16（int16 x2 內積；含負數 / 溢位 / 轉送 / load-use / 依結果分支）----
+P += [asm("xdotp16", 15, a, b), asm("xdotp16", 16, a, a), asm("xdotp16", 17, c, 0),
+      asm("lui", 28, 0x80008),                                                     # x28 = 0x80008000
+      asm("xdotp16", 29, 28, 28),                                                  # 2*(-32768)^2 = 0x80000000（溢位回繞）
+      asm("lui", 19, 0x7FFF8), asm("addi", 19, 19, -1),                            # x19 = 0x7FFF7FFF
+      asm("xdotp16", 20, 19, 19), asm("xdotp16", 21, 28, 19),
+      asm("xdotp16", 22, a, b), asm("add", 23, 22, 22), asm("xdotp16", 24, 22, 22),   # xdotp→add、xdotp→xdotp 轉送
+      asm("sw", 22, 0, 16), asm("lw", 25, 0, 16), asm("xdotp16", 26, 25, a),       # load→xdotp（load-use）
+      asm("xdotp16", 7, 0, 0), asm("addi", 8, 0, 0),
+      asm("beq", 7, 8, 8), asm("xdotp16", 27, a, b),                               # 0==0：beq 跳過 shadow 的 xdotp16（被 flush）
+      asm("addi", 10, 0, 0x77)]
 # ---- illegal（皆在已提交路徑，應當作 NOP；結果暫存器維持 0）----
 ILLEGAL_START = len(P) * 4
 P += [enc_r(OP, 1, 0x01, 12, 11, 10),                        # mulh x12,x11,x10（RV32M 只實作 MUL）
       0x00002583,                                             # lh? -> lw 是 0x00002583；此為 lw 合法，改下方
       ]
 P.pop()                                                       # 移除上面誤放的合法 lw
-P += [0x00000283,                                             # lb x5,0(x0)   → 只支援 lw
+P += [enc_r(CUSTOM0, 0, 0x01, 12, a, b),                       # custom-0 但 funct7≠0 → illegal
+      0x00000283,                                             # lb x5,0(x0)   → 只支援 lw
       0x00000000,                                             # 全零字
       0x0ff0000f,                                             # fence
       0x00000073,                                             # ecall
@@ -70,5 +82,8 @@ if __name__ == "__main__":
     with open(os.path.join(out, "program.hex"), "w") as f:
         for w in P: f.write("%08x\n" % w)
     r = run(P)
+    with open(os.path.join(out, "board_program_expect.mem"), "w") as f:     # x0..x31 + dmem[0..15]
+        for v in r["regs"]: f.write("%08x\n" % v)
+        for i in range(16): f.write("%08x\n" % r["mem"].get(i, 0))
     print("words:", len(P), " spin pc: 0x%X" % r["pc"], " writebacks:", len(r["wb"]), " committed illegal:", len(r["illegal"]),
           [hex(p) for p in r["illegal"]])

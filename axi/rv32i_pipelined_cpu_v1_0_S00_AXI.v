@@ -5,6 +5,7 @@
 	(
 		// Users to add parameters here
         parameter IMEM_FILE = "program.hex",
+        parameter EXTERNAL_MEM = 1,      // IP: IMEM/DMEM are external BRAMs (Block Memory Generator)
 		// User parameters ends
 		// Do not modify the parameters beyond this line
 
@@ -15,7 +16,22 @@
 	)
 	(
 		// Users to add ports here
-
+		// ---- IMEM BRAM master port (CPU reads instructions; connect to port B of a true-dual-port Block Memory Generator) ----
+		output wire [31:0] imem_bram_addr,     // BYTE address (use "32-bit address interface" in the BMG)
+		output wire        imem_bram_clk,
+		output wire        imem_bram_rst,
+		output wire        imem_bram_en,
+		output wire [3:0]  imem_bram_we,
+		output wire [31:0] imem_bram_din,
+		input  wire [31:0] imem_bram_dout,
+		// ---- DMEM BRAM master port (CPU loads/stores) ----
+		output wire [31:0] dmem_bram_addr,
+		output wire        dmem_bram_clk,
+		output wire        dmem_bram_rst,
+		output wire        dmem_bram_en,
+		output wire [3:0]  dmem_bram_we,
+		output wire [31:0] dmem_bram_din,
+		input  wire [31:0] dmem_bram_dout,
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -248,33 +264,6 @@
 	  end
 	end
 
-	// ---------------- Instruction memory loader (Phase 4 Stage 1) ----------------
-	// 0x30 IMEM_ADDR : word index (0..1023)
-	// 0x34 IMEM_DATA : write -> imem[IMEM_ADDR] = data, IMEM_ADDR auto-increments. Accepted only while CTRL.rst_n = 0.
-	// 0x38 IMEM_STATUS: [31] sticky "write rejected because CPU running" (clear by writing 0x38), [15:0] words written
-	reg [9:0]  imem_idx;
-	reg [15:0] imem_cnt;
-	reg        imem_rej;
-	wire       imem_sel_data = slv_reg_wren && axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hD && S_AXI_WSTRB == 4'hF;
-	wire       imem_we_w     = imem_sel_data && !slv_reg0[0];
-	always @( posedge S_AXI_ACLK )
-	begin
-	  if ( S_AXI_ARESETN == 1'b0 ) begin
-	    imem_idx <= 10'd0; imem_cnt <= 16'd0; imem_rej <= 1'b0;
-	  end else begin
-	    if (slv_reg_wren && axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hC && S_AXI_WSTRB[0])
-	      imem_idx <= S_AXI_WDATA[9:0];
-	    else if (imem_we_w) begin
-	      imem_idx <= imem_idx + 10'd1;
-	      imem_cnt <= imem_cnt + 16'd1;
-	    end
-	    if (imem_sel_data && slv_reg0[0]) imem_rej <= 1'b1;
-	    if (slv_reg_wren && axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hE) begin
-	      imem_rej <= 1'b0; imem_cnt <= 16'd0;
-	    end
-	  end
-	end
-
 	// Implement write response logic generation
 	// The write response and response valid signals are asserted by the slave 
 	// when axi_wready, S_AXI_WVALID, axi_wready and S_AXI_WVALID are asserted.  
@@ -388,10 +377,7 @@
 	        4'h8 : reg_data_out = {26'b0, tr_meta_mem[tr_ridx]};  // [5:1]=wb_rd, [0]=wb_we
         4'h9 : reg_data_out = {31'b0, illegal_out_wire};       // 0x24 sticky illegal flag
         4'hA : reg_data_out = illegal_pc_out_wire;             // 0x28 PC of first illegal instr
-        4'hB : reg_data_out = 32'h0000_000F;                   // 0x2C feature bits: [0]=illegal regs, [1]=RV32M MUL, [2]=custom XDOTP16, [3]=PS-writable IMEM
-        4'hC : reg_data_out = {22'b0, imem_idx};               // 0x30 IMEM_ADDR (word index)
-        4'hD : reg_data_out = 32'h0;                           // 0x34 IMEM_DATA (write-only)
-        4'hE : reg_data_out = {imem_rej, 15'b0, imem_cnt};     // 0x38 IMEM_STATUS: [31]=write rejected (CPU was running), [15:0]=words written
+        4'hB : reg_data_out = 32'h0000_0017;                   // 0x2C feature bits: [0]=illegal regs, [1]=RV32M MUL, [2]=custom XDOTP16, [3]=(removed) AXI-loaded internal IMEM, [4]=external BRAM IMEM/DMEM
 	        default : reg_data_out = 0;
 	      endcase
 	end
@@ -442,8 +428,12 @@
     end
 
 	// Add user logic here
+    wire [31:0] cpu_imem_addr, cpu_dmem_addr, cpu_dmem_wdata;
+    wire        cpu_dmem_we;
+
     rv32i_pipeline #(
-        .IMEM_FILE(IMEM_FILE)
+        .IMEM_FILE(IMEM_FILE),
+        .EXTERNAL_MEM(EXTERNAL_MEM)
     ) rv32i_pipeline_inst (
         .clk(S_AXI_ACLK),
         .rst_n(slv_reg0[0]),
@@ -454,10 +444,27 @@
         .dmem_rdata_out(dmem_rdata_out_wire),
         .illegal_out(illegal_out_wire),
         .illegal_pc_out(illegal_pc_out_wire),
-        .imem_we(imem_we_w),
-        .imem_waddr(imem_idx),
-        .imem_wdata(S_AXI_WDATA)
+        .imem_addr(cpu_imem_addr),
+        .imem_rdata(imem_bram_dout),
+        .dmem_addr(cpu_dmem_addr),
+        .dmem_wdata(cpu_dmem_wdata),
+        .dmem_we(cpu_dmem_we),
+        .dmem_ext_rdata(dmem_bram_dout)
     );
+
+    // BRAM master ports (always enabled; the BMG has a 1-cycle read latency which the pipeline is built around)
+    assign imem_bram_addr = cpu_imem_addr;
+    assign imem_bram_clk  = S_AXI_ACLK;
+    assign imem_bram_rst  = 1'b0;
+    assign imem_bram_en   = 1'b1;
+    assign imem_bram_we   = 4'b0000;
+    assign imem_bram_din  = 32'h0;
+    assign dmem_bram_addr = cpu_dmem_addr;
+    assign dmem_bram_clk  = S_AXI_ACLK;
+    assign dmem_bram_rst  = 1'b0;
+    assign dmem_bram_en   = 1'b1;
+    assign dmem_bram_we   = {4{cpu_dmem_we}};
+    assign dmem_bram_din  = cpu_dmem_wdata;
     
 	// User logic ends
 

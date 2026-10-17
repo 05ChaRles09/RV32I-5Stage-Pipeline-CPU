@@ -3,7 +3,8 @@
 `timescale 1ns / 1ps
 
 module dmem #(
-    parameter ADDR_WIDTH = 12
+    parameter ADDR_WIDTH = 12,
+    parameter EXTERNAL   = 0     // 1: data memory lives OUTSIDE (Block Memory Generator); ext_rdata is used
 )(
     input  wire        clk,
     input  wire        rst_n,
@@ -11,10 +12,12 @@ module dmem #(
     input  wire        mem_write,
     input  wire [31:0] addr,
     input  wire [31:0] wdata,
-    output reg  [31:0] rdata
+    output wire [31:0] rdata,
+    input  wire [31:0] ext_rdata
 );
     localparam DEPTH = (1 << ADDR_WIDTH);
     reg [31:0] mem [0:DEPTH-1];
+    reg [31:0] rdata_q;
     integer i;
 
     initial begin
@@ -27,6 +30,7 @@ module dmem #(
     always @(posedge clk) begin
         if (mem_write)
             mem[addr[ADDR_WIDTH-1:2]] <= wdata;
-        rdata <= mem[addr[ADDR_WIDTH-1:2]];
+        rdata_q <= mem[addr[ADDR_WIDTH-1:2]];
     end
+    assign rdata = EXTERNAL ? ext_rdata : rdata_q;
 endmodule

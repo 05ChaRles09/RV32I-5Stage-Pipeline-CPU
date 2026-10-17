@@ -17,9 +17,11 @@
 //   0x2c beq  x0,x0,+8          always taken, skips 0x30
 //   0x30 mulh x9,x1,x1          wrong-path illegal: flushed, must NOT be reported
 //   0x34 addi x8,x0,3
-//   0x38 jal  x0,0              spin
+//   0x38 custom-0 funct7=1      ILLEGAL (only XDOTP16 funct7=0/funct3=0 defined) -> x10 stays 0
+//   0x3c custom-0 funct3=1      ILLEGAL -> x11 stays 0
+//   0x40 jal  x0,0              spin
 //
-// Expected: 7 committed illegal instructions, first at pc=0x04, sticky flag set.
+// Expected: 9 committed illegal instructions, first at pc=0x04, sticky flag set.
 //
 module tb_illegal;
     reg clk = 0;
@@ -67,6 +69,8 @@ module tb_illegal;
         check_reg("legal addi x7",         7, 1);
         check_reg("branch target x8",      8, 3);
         check_reg("wrong-path mulh x9",     9, 0);
+        check_reg("bad custom-0 f7 NOP",  10, 0);
+        check_reg("bad custom-0 f3 NOP",  11, 0);
 
         if (dut.dmem_inst.mem[0] !== 32'd0) begin
             $display("FAIL illegal sb wrote dmem[0] = 0x%08h", dut.dmem_inst.mem[0]); errors = errors + 1;
@@ -80,8 +84,8 @@ module tb_illegal;
             $display("FAIL illegal_pc = 0x%08h, expected 0x00000004", illegal_pc); errors = errors + 1;
         end else $display("PASS illegal_pc = 0x%08h", illegal_pc);
 
-        if (n_illegal !== 7) begin
-            $display("FAIL committed illegal count = %0d, expected 7 (wrong-path one must not count)", n_illegal);
+        if (n_illegal !== 9) begin
+            $display("FAIL committed illegal count = %0d, expected 9 (wrong-path one must not count)", n_illegal);
             errors = errors + 1;
         end else $display("PASS committed illegal count = %0d", n_illegal);
 

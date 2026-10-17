@@ -6,9 +6,9 @@
 cd "$(dirname "$0")" || exit 99
 command -v xvlog >/dev/null || { echo "找不到 xvlog，請先 source Vivado 的 settings64.sh"; exit 99; }
 mkdir -p .xsim_work
-SRCS="$(ls ../src/*.v) ../axi/rv32i_pipelined_cpu_v1_0_S00_AXI.v"
+SRCS="$(ls ../src/*.v) ../axi/rv32i_pipelined_cpu_v1_0_S00_AXI.v ../axi/rv32i_pipelined_cpu_v1_0.v bmg_tdp_model.v"
 nfail=0
-for tb in tb_rv32i_pipeline tb_jalr tb_extra_branches tb_load_use_branch tb_illegal tb_zbb_unit tb_zbb_prog tb_board_program tb_imem_default tb_axi_imem_load tb_bram_timing; do
+for tb in tb_rv32i_pipeline tb_jalr tb_extra_branches tb_load_use_branch tb_illegal tb_zbb_unit tb_zbb_prog tb_board_program tb_imem_default tb_bram_timing tb_axi_bram_system; do
   echo "==== $tb"
   xvlog $SRCS $tb.v -log .xsim_work/${tb}_xvlog.log >/dev/null 2>&1
   xelab -debug off $tb -s ${tb}_snap -log .xsim_work/${tb}_xelab.log >/dev/null 2>&1

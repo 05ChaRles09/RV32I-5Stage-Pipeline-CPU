@@ -4,7 +4,7 @@
 	module rv32i_pipelined_cpu_v1_0 #
 	(
 		// Users to add parameters here
-
+		parameter EXTERNAL_MEM = 1,
 		// User parameters ends
 		// Do not modify the parameters beyond this line
 
@@ -15,6 +15,20 @@
 	)
 	(
 		// Users to add ports here
+		output wire [31:0] imem_bram_addr,
+		output wire        imem_bram_clk,
+		output wire        imem_bram_rst,
+		output wire        imem_bram_en,
+		output wire [3:0]  imem_bram_we,
+		output wire [31:0] imem_bram_din,
+		input  wire [31:0] imem_bram_dout,
+		output wire [31:0] dmem_bram_addr,
+		output wire        dmem_bram_clk,
+		output wire        dmem_bram_rst,
+		output wire        dmem_bram_en,
+		output wire [3:0]  dmem_bram_we,
+		output wire [31:0] dmem_bram_din,
+		input  wire [31:0] dmem_bram_dout,
 
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -45,9 +59,24 @@
 	);
 // Instantiation of Axi Bus Interface S00_AXI
 	rv32i_pipelined_cpu_v1_0_S00_AXI # ( 
+		.EXTERNAL_MEM(EXTERNAL_MEM),
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
 	) rv32i_pipelined_cpu_v1_0_S00_AXI_inst (
+		.imem_bram_addr(imem_bram_addr),
+.imem_bram_clk(imem_bram_clk),
+.imem_bram_rst(imem_bram_rst),
+.imem_bram_en(imem_bram_en),
+.imem_bram_we(imem_bram_we),
+.imem_bram_din(imem_bram_din),
+.imem_bram_dout(imem_bram_dout),
+.dmem_bram_addr(dmem_bram_addr),
+.dmem_bram_clk(dmem_bram_clk),
+.dmem_bram_rst(dmem_bram_rst),
+.dmem_bram_en(dmem_bram_en),
+.dmem_bram_we(dmem_bram_we),
+.dmem_bram_din(dmem_bram_din),
+.dmem_bram_dout(dmem_bram_dout),
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
 		.S_AXI_AWADDR(s00_axi_awaddr),

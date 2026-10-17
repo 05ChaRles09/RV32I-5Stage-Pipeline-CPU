@@ -4,3 +4,4 @@ gen_illegal_hex.py    產生 sim/illegal.hex
 gen_board_test.py     產生板測 PROGRAM / board_program.hex
 verify_encodings.py   與 GNU binutils 比對編碼（需要 riscv 工具鏈，選用）
 gen_bram_timing.py    產生 sim/bram_timing.hex、bram_timing_expect.mem（BRAM 同步讀取時序邊界的定向程式）
+gen_coe.py            產生 bram_init/imem_board_program.coe、dmem_zero.coe（Block Memory Generator 初始化檔）

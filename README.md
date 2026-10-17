@@ -182,10 +182,7 @@ SIZE = 0x10000
 | `0x20` | `T_META` | 讀取 trace metadata；以 `(meta >> 1) & 31` 取得 `wb_rd`，以 `meta & 1` 取得 `wb_we` |
 | `0x24` | `ILLEGAL` | 非法指令 sticky flag（bit 0）；reset 後清除 |
 | `0x28` | `ILLEGAL_PC` | 第一個非法指令的 PC |
-| `0x2C` | `FEATURE` | 功能旗標：bit 0 = illegal 暫存器、bit 1 = RV32M `MUL`、bit 2 = 自訂 `XDOTP16`、bit 3 = PS 可寫入 IMEM（目前讀值 `0xF`） |
-| `0x30` | `IMEM_ADDR` | IMEM 寫入位址（字索引 0..1023），寫入資料後自動加 1 |
-| `0x34` | `IMEM_DATA` | 寫入：`imem[IMEM_ADDR] = data`；**僅在 CPU reset（`CTRL.bit0 = 0`）時接受**，執行中寫入會被拒絕 |
-| `0x38` | `IMEM_STATUS` | bit 31 = 曾有寫入因 CPU 執行中被拒絕（sticky）、bit 15:0 = 已寫入字數；寫入任意值清除 |
+| `0x2C` | `FEATURE` | 功能旗標：bit 0 = illegal 暫存器、bit 1 = RV32M `MUL`、bit 2 = 自訂 `XDOTP16`、bit 3 = （IP 1.4 的 AXI 載入 IMEM，IP 1.6 已移除）、bit 4 = 外部 BRAM IMEM/DMEM（目前讀值 `0x17`） |
 
 測試輸出中的 trace status 為 `0x80000100`，代表已啟用 trace，且擷取到 256 筆紀錄。
 
@@ -194,12 +191,14 @@ SIZE = 0x10000
 ```text
 .
 ├── src/                  CPU RTL（pipeline、ALU、zbb_unit、control_unit、imem、dmem …）
-├── axi/                  AXI4-Lite IP 頂層與 S00_AXI wrapper（含 trace / illegal 暫存器）
+├── axi/                  AXI4-Lite IP 頂層與 S00_AXI wrapper（含 trace / illegal 暫存器、IMEM/DMEM 的 BRAM master 介面）
+├── bram_init/            Block Memory Generator 初始化檔（COE，由 tools/gen_coe.py 產生）
 ├── sim/                  Testbench、測試資料（.hex / .mem）、run_xsim.bat / run_xsim.sh
 ├── tools/                Python 黃金模型與測試資料產生器（選用，Vivado 流程不需要）
 ├── pynq_5-stage-pipeline-CPU_TEST/
 │                         板上測試 Notebook、.bit / .hwh、測試報告 JSON
-├── docs/                 Vivado 使用指南、IP 打包踩雷紀錄、開發紀錄與 Bug 整理
+├── docs/                 Vivado 使用指南、Stage 2b 操作與踩雷、IP 打包踩雷紀錄、開發紀錄與 Bug 整理
+│   └── vivado_reports/   各 IP 版本的 util / timing / power 原始報告（ip1.5、ip1.6）
 ├── constrs/              constraints.xdc（整合設計：不需額外約束，內含說明）、constraints_standalone.xdc（單獨合成 CPU 核心用）
 └── README.md
 ```
@@ -209,6 +208,8 @@ SIZE = 0x10000
 - 詳細步驟見 [`docs/VIVADO_GUIDE.md`](docs/VIVADO_GUIDE.md)，IP 打包常見問題見 [`docs/IP_PACKAGING_LESSONS.md`](docs/IP_PACKAGING_LESSONS.md)。
 
 ## Verification Status
+
+### 模擬（11 個 testbench；內部記憶體模式 10 個 + 系統層級 1 個）
 
 在 `sim/` 執行 `run_xsim.bat`（Windows）或 `run_xsim.sh`（Linux），需先載入 Vivado 環境。
 
@@ -224,7 +225,7 @@ SIZE = 0x10000
 | `tb_board_program` | 上板用 136 字程式的整合驗證（暫存器、DMEM、第一個非法 PC、spin 前所需 cycle） |
 | `tb_imem_default` | `imem.v` 內建（寫死）程式完整性，也就是合成進 bitstream 的內容 |
 | `tb_bram_timing` | BRAM 同步讀取的時序邊界：store→load 緊接、load-use stall 時取指保持、load 結果當 store 資料、load-use 後接 taken branch、jal 重導向、迴圈 RAW（預期值由 Python 黃金模型產生） |
-| `tb_axi_imem_load` | Phase 4 Stage 1：透過 AXI-Lite 暫存器（0x30/0x34/0x38）載入程式、執行、執行中寫入被拒絕、重新載入另一支程式 |
+| `tb_axi_bram_system` | Stage 2b 系統層級：CPU IP（`EXTERNAL_MEM=1`）+ 兩個 BMG 行為模型（`sim/bmg_tdp_model.v`，port A 當 PS）。COE 式初始化程式執行、PS 讀回 IMEM / DMEM、PS 清空 DMEM 並載入另一支程式後執行、執行中 PS 讀 DMEM 不影響 CPU（只用於模擬，不要加進 IP） |
 
 測試有效性以突變測試確認：故意把 `MUL` 改成加法、把 `XDOTP16` 改成減法或接錯半字，以及重現 `imem.v` 填充迴圈的舊錯誤，對應測試都會失敗。
 
@@ -249,6 +250,26 @@ SIZE = 0x10000
 | **總計** | | **40/40 PASS** |
 
 測試報告：[`pynq_5-stage-pipeline-CPU_TEST/cpu_test_report_v3_xdotp16_40of40.json`](pynq_5-stage-pipeline-CPU_TEST/cpu_test_report_v3_xdotp16_40of40.json)。較早期的版本紀錄：基本 + trace 16/16 → Zbb 32/32 → 加 illegal 38/38 → 加 `MUL` 39/39（[`cpu_test_report_v2_mul_39of39.json`](pynq_5-stage-pipeline-CPU_TEST/cpu_test_report_v2_mul_39of39.json)）。
+
+### PYNQ-ZU 實板測試結果（Notebook v5，IP 1.6：52/52 PASS）
+
+Stage 2b 的 bitstream（IMEM / DMEM 為 BMG，PS 經 AXI BRAM Controller 存取）。T1~T8 與前一版相同（40 項）；L1~L9 為新增，驗證 PS 對 BRAM 的存取：
+
+| 測試 | 驗證內容 | 結果 |
+|---|---|---|
+| T1~T8 | 與 Notebook v3 相同：reset／run、trace、Zbb 18 項、`MUL`、`XDOTP16`、illegal 旗標 | 40/40 PASS |
+| L1 | `FEATURE` = `0x17`（bit 4：外部 BRAM） | PASS |
+| L2a / L2b | PS 讀回 IMEM：前 136 字 = 板測程式（COE 初始化正確）、其餘為 NOP | PASS |
+| L3a / L3b | PS 寫入 DMEM 整塊 1024 字圖樣後讀回一致；清空後全為 0 | PASS |
+| L4 | PS 載入小程式（`add`/`sw`/`lw`/`mul`/`xdotp16`）：寫回序列與整塊 DMEM 皆與黃金模型一致 | PASS |
+| L5 | 再載入另一支程式（`sub`）：`DMEM[0]` = 41 | PASS |
+| L6a / L6b | 載回 136 字板測程式：102 筆寫回、整塊 DMEM 與黃金模型一致 | PASS |
+| L7 | 批次載入 `zbb_prog.hex` 的 40 支程式：8,470 筆寫回、1,529 個 DMEM 字與黃金模型一致 | PASS |
+| L8 | CPU 執行中 PS 反覆讀 DMEM，CPU 結果不受影響 | PASS |
+| L9 | 還原板測程式後 PC 停在 spin 迴圈 | PASS |
+| **總計** | | **52/52 PASS** |
+
+測試報告：[`pynq_5-stage-pipeline-CPU_TEST/cpu_test_report_v5_ip1.6_52of52.json`](pynq_5-stage-pipeline-CPU_TEST/cpu_test_report_v5_ip1.6_52of52.json)。本結果是以 Notebook v5 原樣（`load_program` 不補寫 word 0）、在 `imem_bmg` 的 Enable Port Type 為 Use ENA Pin 的 bitstream 上取得；先前 Enable Port Type 設成 Always Enabled 時，L4~L8 會因 IMEM word 0 被誤寫而失敗（開發紀錄 Bug 11）。
 
 ### Vivado 時序與資源
 
@@ -296,7 +317,26 @@ Vivado 2022.2，裝置 `xczu5eg-sfvc784-1-i`（PYNQ-ZU），Implementation 完�
 - 功耗差異在估算誤差內：CPU IP 估計 0.042 W（上一版 0.027 W），其中 Block RAM 0.002 W；總量仍由 PS8（2.158 W）主導。
 - 板上測試：Notebook v4 共 48 項全過（含 L6：40 支程式、8470 筆寫回與黃金模型一致）。
 
-### 功耗（Vivado 預估，`report_power`）
+#### Stage 2b（IP 1.6）：IMEM/DMEM 改為 BMG + AXI BRAM Controller 後重新量測
+
+同一裝置、同樣 100 MHz 約束、Routed 結果（`design_1_wrapper`，含 PS、兩個 AXI BRAM Controller 與擴增後的 AXI Interconnect）。原始報告見 [`docs/vivado_reports/`](docs/vivado_reports/)。
+
+| 項目 | IP 1.4（LUTRAM） | IP 1.5（BRAM，內部） | IP 1.6（BMG + AXI BRAM Controller） |
+|---|---:|---:|---:|
+| CLB LUTs | 3,877 | 3,286 | 4,650 |
+| LUT as Distributed RAM | 864 | 352 | 352 |
+| CLB Registers | 2,174 | 2,160 | 3,691 |
+| Block RAM Tile（RAMB36） | 0 | 2 | 2 |
+| DSP48E2 | 5 | 5 | 5 |
+| WNS | +1.977 ns | +2.125 ns | +1.979 ns |
+| WHS | +0.001 ns | +0.019 ns | +0.015 ns |
+| Total On-Chip Power | 2.613 W | 2.628 W | 2.641 W |
+
+- LUT 與暫存器比 IP 1.5 增加（+1,364 LUT、+1,531 FF）：新增的是兩個 AXI BRAM Controller 與多出兩個 Master 埠的 AXI Interconnect（含 AXI4→AXI4-Lite 協定轉換），這些是讓 PS 能存取 BRAM 的代價；CPU 核心本身與 IP 1.5 相同（此為依架構的推測，未做逐模組的資源拆分）。BRAM 仍是 2 個 RAMB36（IMEM、DMEM 各 4 KB）。
+- 時序全部滿足（All user specified timing constraints are met）：setup 最差路徑仍是「EX forwarding → 乘法器（DSP48E2 串接）→ `alu_result`」，資料路徑 7.745 ns、19 級邏輯；依 WNS +1.979 ns 粗估上限約 125 MHz（估算，非實測）。WHS 僅 +0.015 ns，不同 Implementation run 之間可能浮動。
+- 功耗（Vivado 估算，Confidence Medium）：Dynamic 2.216 W（PS8 2.158 W、CPU IP 0.039 W、兩個 BMG 各約 0.002~0.003 W、兩個 AXI BRAM Controller 各 0.002 W、Interconnect 0.009 W）、Static 0.425 W、Junction 31.1 °C。總量仍由 PS8 主導。
+
+### 功耗（Vivado 預估，`report_power`；以下為 Stage 1 / IP 1.4 build）
 
 | 項目 | 功耗 |
 |---|---:|
@@ -312,15 +352,15 @@ Vivado 2022.2，裝置 `xczu5eg-sfvc784-1-i`（PYNQ-ZU），Implementation 完�
 
 ### 驗證範圍與限制
 
-目前已在實板上驗證內建測試程式的執行結果、控制／除錯介面、特定程式的 trace 與 ISA 黃金模型一致性，以及 Zbb / `MUL` / `XDOTP16` 的指定運算與非法指令偵測。
+目前已在實板上驗證內建測試程式的執行結果、控制／除錯介面、特定程式的 trace 與 ISA 黃金模型一致性，Zbb / `MUL` / `XDOTP16` 的指定運算與非法指令偵測，以及 PS 經 AXI BRAM Controller 載入並執行不同程式（40 支隨機程式與黃金模型逐筆一致）。
 
 目前測試結果**尚不能單獨證明**：
 
 - 所有合法指令編碼與所有邊界情況均通過完整 compliance test（例如 riscv-arch-test）
 - 所有 forwarding、load-use stall、branch flush 情境均已完整覆蓋
 - 實際可達的最高時脈（目前只有依 slack 的估算）、板上實測功耗，以及不同 Vivado run 之間 hold slack（目前僅 +0.001 ns）的穩定性
-- PYNQ 可任意下載程式至 CPU Instruction Memory
-- CPU 已透過 AXI BRAM Controller 與 PS 共用外部 BRAM
+- CPU 執行中由 PS 寫入 IMEM／DMEM 的行為（目前只在 CPU reset 時載入程式；執行中只測了 PS 讀取）
+- 更大的記憶體（目前 IMEM／DMEM 各 4 KB；參數化，尚未以 16 KB 上板）
 
 上述項目應分別透過專用測試與 Vivado 報告確認。
 
@@ -395,24 +435,40 @@ RV32I CPU
           RISC-V CPU Core
 ```
 
-**Stage 1（已實作）— PS 可寫入的指令記憶體**：`imem` 新增寫入埠（仍是 Distributed RAM、非同步讀取，pipeline 不變），PS 在 CPU reset 時經 AXI 暫存器 `0x30/0x34/0x38` 載入程式，不必重新合成。Notebook v4（cell ⑧）可載入 hex 程式並與黃金模型逐筆比對。
+**IP 版本紀錄（Phase 4）**
+
+| IP 版本 | 內容 | 板測 |
+|---|---|---|
+| 1.3 | 新增自訂指令 `XDOTP16`（FEATURE bit 2） | Notebook v3：40/40 |
+| 1.4 | Stage 1：PS 經 AXI 暫存器載入 IMEM（FEATURE `0xF`） | Notebook v4 L1~L7 通過 |
+| 1.5 | Stage 2a：pipeline 改為 BRAM 同步讀取（IMEM 位址 = `pc_next`；DMEM 讀寫移到 EX） | Notebook v4：48 項全過 |
+| 1.6 | Stage 2b：CPU IP 開 BRAM master 介面，接 BMG + AXI BRAM Controller；移除 1.4 的載入暫存器；FEATURE `0x17` | Notebook v5：**52/52 PASS** |
+
+**Stage 1（IP 1.4，已上板；IP 1.6 起被取代）— PS 可寫入的指令記憶體**：`imem` 新增寫入埠，PS 在 CPU reset 時經 AXI 暫存器 `0x30/0x34/0x38` 載入程式。IP 1.6 改由 BRAM 取代，這三個暫存器已移除。
 
 **Stage 2a（模擬完成）— pipeline 改為 BRAM 同步讀取**：IMEM 位址接 `pc_next`（stall 時保持 `pc`，讀出的指令與 `pc` 同拍對齊）；DMEM 的位址／寫入資料／寫入致能改由 EX 階段驅動（專用加法器 `rs1 + imm`），讀出資料在 MEM 階段出現。store 在 EX 提交是安全的（EX 內的指令不會是推測執行），所以 store 後緊接 load 不需要額外 bypass。與改動前逐 cycle 比對（41 支程式 × 1500 cycle）結果完全相同，沒有增加 stall。記憶體大小以 `IMEM_ADDR_WIDTH` / `DMEM_ADDR_WIDTH` 參數化（預設 12 = 4 KB，14 = 16 KB 已通過同一組測試）。
 
-**Stage 2b（規劃中）— Block Memory Generator + AXI BRAM Controller**：IMEM/DMEM 改為 true dual-port BRAM，一個埠給 CPU、另一個埠接 AXI BRAM Controller；IF 階段改成同步讀取（`addr = pc_next`、stall 時保持輸出）。
+**Stage 2b（IP 1.6，已上板驗證，Notebook v5 共 52 項全過）— Block Memory Generator + AXI BRAM Controller**：CPU IP 對外開兩組 BRAM master 介面（`imem_bram_*` 唯讀、`dmem_bram_*` 讀寫；32 位元**位元組位址**、`we[3:0]` 位元組寫入致能、讀取延遲 1 個週期，與 Stage 2a 的 pipeline 時序一致）。每塊記憶體是一個 true-dual-port BMG：port B 給 CPU，port A 經 AXI BRAM Controller 給 PS。PS 因此可以直接載入程式、讀寫 DMEM，不再受 256 筆 trace 的限制；預設程式改由 COE（`bram_init/imem_board_program.coe`）初始化，因此 `imem_bmg` 使用 Stand Alone 模式（BRAM Controller 模式不允許載入 COE）；兩顆 BMG 都是 32 位元、深度 1024（4 KB）、Output Register 關閉、**Enable Port Type 必須是 Use ENA/ENB Pin**（設成 Always Enabled 會讓 PS 批次寫入時 word 0 被誤寫，見開發紀錄 Bug 11）。`EXTERNAL_MEM` 參數預設為 IP 模式 1；測試用的獨立 `rv32i_pipeline` 預設 0（內部記憶體），所以原本的 testbench 完全不用改。操作步驟與踩雷見 [`docs/PHASE4_STAGE2B_VIVADO.md`](docs/PHASE4_STAGE2B_VIVADO.md)。
 
-- [x] Stage 1：PS 經 AXI 載入程式（`tb_axi_imem_load`）
-- [ ] Stage 1 上板驗證（Notebook v4：L1~L7）
+```text
+             PS / ARM
+                 │ AXI
+        AXI Interconnect ──────────────┐
+          │              │             │
+   AXI BRAM Ctrl     AXI BRAM Ctrl   CPU IP（AXI-Lite 控制/除錯 + 兩組 BRAM master）
+          │ port A       │ port A       │ imem_bram (port B, 唯讀)
+        IMEM BMG ◄───────┼──────────────┘
+        DMEM BMG ◄───────┴──── dmem_bram (port B)
+```
+
+- [x] Stage 1（IP 1.4）：PS 經 AXI 暫存器載入程式（已上板，IP 1.6 起移除）
+- [x] Stage 1 上板驗證（Notebook v4：L1~L7）
 - [x] Stage 2a：pipeline 同步讀取 IMEM/DMEM（`tb_bram_timing`、既有測試全過）
-- [ ] Stage 2a 上板驗證與重新量測資源／時序（預期出現 BRAM 用量）
-- [ ] Stage 2b：Block Memory Generator + AXI BRAM Controller、PS 直接存取 IMEM/DMEM
-      
-**Stage 2（規劃中）— 真正的 BRAM + AXI BRAM Controller**：IMEM/DMEM 改為 true dual-port BRAM，一個埠給 CPU、另一個埠接 AXI BRAM Controller；IF 階段改成同步讀取（`addr = pc_next`、stall 時保持輸出）。
-
-- [x] Stage 1：PS 經 AXI 載入程式（`tb_axi_imem_load`）
-- [ ] Stage 1 上板驗證（Notebook v4：L1~L7）
-- [ ] Stage 2：BRAM + AXI BRAM Controller、同步讀取 IF 階段
-- [ ] 驗證記憶體初始化、存取仲裁與 CPU/PS 控制權
+- [x] Stage 2a 上板驗證與重新量測資源／時序（BRAM 2 個 RAMB36；Notebook v4 共 48 項全過）
+- [x] Stage 2b RTL 與系統層級模擬（`tb_axi_bram_system`）
+- [x] Stage 2b Vivado 整合與上板驗證（Notebook v5：T1~T8 + L1~L9，共 52 項全過）
+- [x] 驗證記憶體初始化（COE）、PS 讀寫、執行中 PS 讀取不影響 CPU
+- [ ] 尚未驗證：CPU 執行中 PS 寫入 IMEM／DMEM 的行為（目前只在 CPU reset 時載入程式）
 
 ## Technical Topics
 

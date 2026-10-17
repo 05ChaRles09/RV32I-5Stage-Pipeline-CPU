@@ -104,6 +104,8 @@ def enc_j(rd, imm):
 
 BASE_R = {"add": (0, 0x00), "sub": (0, 0x20), "sll": (1, 0), "slt": (2, 0), "sltu": (3, 0),
           "xor": (4, 0), "srl": (5, 0), "sra": (5, 0x20), "or": (6, 0), "and": (7, 0)}
+CUSTOM0 = 0x0B                    # custom-0 opcode
+X_R = {"xdotp16": (0, 0x00)}      # 自訂：int16 x2 內積（opcode=custom-0）
 M_R = {"mul": (0, 0x01)}          # RV32M：只實作 MUL（低 32 位元）
 BASE_I = {"addi": 0, "slti": 2, "sltiu": 3, "xori": 4, "ori": 6, "andi": 7}
 SHIFT_I = {"slli": (1, 0x00), "srli": (5, 0x00), "srai": (5, 0x20), "rori": (5, 0x30)}
@@ -126,6 +128,8 @@ def asm(name, *a):
         f3, f7 = ZBB_R[name]; return enc_r(OP, f3, f7, *a)
     if name in M_R:
         f3, f7 = M_R[name]; return enc_r(OP, f3, f7, *a)
+    if name in X_R:
+        f3, f7 = X_R[name]; return enc_r(CUSTOM0, f3, f7, *a)
     if name in BASE_I:
         return enc_i(OPIMM, BASE_I[name], *a)
     if name in SHIFT_I:
@@ -178,6 +182,8 @@ def decode(ins):
             if (f3, f7) == (a, b): return (n, rd, rs1, rs2)
         if (f3, f7) == (4, 0x04) and rs2 == 0: return ("zext_h", rd, rs1, 0)
         return None
+    if op == CUSTOM0:
+        return ("xdotp16", rd, rs1, rs2) if (f3, f7) == (0, 0) else None
     if op == OPIMM:
         for n, a in BASE_I.items():
             if f3 == a: return (n, rd, rs1, immi)
@@ -216,6 +222,11 @@ def decode(ins):
     return None
 
 
+def xdotp16(a, b):
+    """rd = a[15:0]*b[15:0] + a[31:16]*b[31:16]（有號 16x16，和取 32 位元）"""
+    return (sx(a & 0xFFFF, 16) * sx(b & 0xFFFF, 16) + sx(a >> 16, 16) * sx(b >> 16, 16)) & M32
+
+
 def _base_r(n, a, b):
     return {"add": a + b, "sub": a - b, "sll": a << (b & 31), "slt": int(s32(a) < s32(b)), "sltu": int(a < b),
             "xor": a ^ b, "srl": a >> (b & 31), "sra": s32(a) >> (b & 31), "or": a | b, "and": a & b}[n] & M32
@@ -238,9 +249,10 @@ def run(prog, max_steps=50000, mem_words=1024):   # dmem.v: 4096 位元組 = 102
             illegal.append(pc)
         else:
             n = d[0]
-            if n in BASE_R or n in ZBB_R or n in M_R:
+            if n in BASE_R or n in ZBB_R or n in M_R or n in X_R:
                 _, rd, r1, r2 = d
-                if n in M_R: val = (x[r1] * x[r2]) & M32
+                if n in X_R: val = xdotp16(x[r1], x[r2])
+                elif n in M_R: val = (x[r1] * x[r2]) & M32
                 elif n in BASE_R: val = _base_r(n, x[r1], x[r2])
                 else: val = ZBB_REF[n](x[r1], x[r2])
             elif n in BASE_I:

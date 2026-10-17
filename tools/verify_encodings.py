@@ -16,6 +16,8 @@ cases = []                         # (asm 文字, 我的編碼)
 for n in list(BASE_R) + list(ZBB_R) + list(M_R):
     for _ in range(6):
         d, a, b = R(), R(), R(); cases.append((f"{n} x{d},x{a},x{b}", asm(n, d, a, b)))
+for _ in range(6):
+    d, a, b = R(), R(), R(); cases.append((f".insn r 0x0b, 0, 0, x{d}, x{a}, x{b}", asm("xdotp16", d, a, b)))
 for n in BASE_I:
     for _ in range(6):
         d, a, i = R(), R(), rnd.randrange(-2048, 2048); cases.append((f"{n} x{d},x{a},{i}", asm(n, d, a, i)))

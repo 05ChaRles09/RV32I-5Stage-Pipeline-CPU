@@ -1,0 +1,525 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+-----------------------------------------------------------------------------------------
+| Tool Version      : Vivado v.2022.2 (win64) Build 3671981 Fri Oct 14 05:00:03 MDT 2022
+| Date              : Sat Oct 17 19:57:55 2026
+| Host              : DESKTOP-7KGHH0A running 64-bit major release  (build 9200)
+| Command           : report_timing_summary -file timing_v16.txt
+| Design            : design_1_wrapper
+| Device            : xczu5eg-sfvc784
+| Speed File        : -1  PRODUCTION 1.30 05-15-2022
+| Temperature Grade : I
+-----------------------------------------------------------------------------------------
+
+Timing Summary Report
+
+------------------------------------------------------------------------------------------------
+| Timer Settings
+| --------------
+------------------------------------------------------------------------------------------------
+
+  Enable Multi Corner Analysis               :  Yes
+  Enable Pessimism Removal                   :  Yes
+  Pessimism Removal Resolution               :  Nearest Common Node
+  Enable Input Delay Default Clock           :  No
+  Enable Preset / Clear Arcs                 :  No
+  Disable Flight Delays                      :  No
+  Ignore I/O Paths                           :  No
+  Timing Early Launch at Borrowing Latches   :  No
+  Borrow Time for Max Delay Exceptions       :  Yes
+  Merge Timing Exceptions                    :  Yes
+
+  Corner  Analyze    Analyze    
+  Name    Max Paths  Min Paths  
+  ------  ---------  ---------  
+  Slow    Yes        Yes        
+  Fast    Yes        Yes        
+
+
+------------------------------------------------------------------------------------------------
+| Report Methodology
+| ------------------
+------------------------------------------------------------------------------------------------
+
+No report available as report_methodology has not been run prior. Run report_methodology on the current design for the summary of methodology violations.
+
+
+
+check_timing report
+
+Table of Contents
+-----------------
+1. checking no_clock (0)
+2. checking constant_clock (0)
+3. checking pulse_width_clock (0)
+4. checking unconstrained_internal_endpoints (0)
+5. checking no_input_delay (0)
+6. checking no_output_delay (0)
+7. checking multiple_clock (0)
+8. checking generated_clocks (0)
+9. checking loops (0)
+10. checking partial_input_delay (0)
+11. checking partial_output_delay (0)
+12. checking latch_loops (0)
+
+1. checking no_clock (0)
+------------------------
+ There are 0 register/latch pins with no clock.
+
+
+2. checking constant_clock (0)
+------------------------------
+ There are 0 register/latch pins with constant_clock.
+
+
+3. checking pulse_width_clock (0)
+---------------------------------
+ There are 0 register/latch pins which need pulse_width check
+
+
+4. checking unconstrained_internal_endpoints (0)
+------------------------------------------------
+ There are 0 pins that are not constrained for maximum delay.
+
+ There are 0 pins that are not constrained for maximum delay due to constant clock.
+
+
+5. checking no_input_delay (0)
+------------------------------
+ There are 0 input ports with no input delay specified.
+
+ There are 0 input ports with no input delay but user has a false path constraint.
+
+
+6. checking no_output_delay (0)
+-------------------------------
+ There are 0 ports with no output delay specified.
+
+ There are 0 ports with no output delay but user has a false path constraint
+
+ There are 0 ports with no output delay but with a timing clock defined on it or propagating through it
+
+
+7. checking multiple_clock (0)
+------------------------------
+ There are 0 register/latch pins with multiple clocks.
+
+
+8. checking generated_clocks (0)
+--------------------------------
+ There are 0 generated clocks that are not connected to a clock source.
+
+
+9. checking loops (0)
+---------------------
+ There are 0 combinational loops in the design.
+
+
+10. checking partial_input_delay (0)
+------------------------------------
+ There are 0 input ports with partial input delay specified.
+
+
+11. checking partial_output_delay (0)
+-------------------------------------
+ There are 0 ports with partial output delay specified.
+
+
+12. checking latch_loops (0)
+----------------------------
+ There are 0 combinational latch loops in the design through latch input
+
+
+
+------------------------------------------------------------------------------------------------
+| Design Timing Summary
+| ---------------------
+------------------------------------------------------------------------------------------------
+
+    WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
+    -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
+      1.979        0.000                      0                12479        0.015        0.000                      0                12479        3.500        0.000                       0                  4160  
+
+
+All user specified timing constraints are met.
+
+
+------------------------------------------------------------------------------------------------
+| Clock Summary
+| -------------
+------------------------------------------------------------------------------------------------
+
+Clock     Waveform(ns)       Period(ns)      Frequency(MHz)
+-----     ------------       ----------      --------------
+clk_pl_0  {0.000 5.000}      10.000          100.000         
+
+
+------------------------------------------------------------------------------------------------
+| Intra Clock Table
+| -----------------
+------------------------------------------------------------------------------------------------
+
+Clock             WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
+-----             -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
+clk_pl_0            1.979        0.000                      0                10942        0.015        0.000                      0                10942        3.500        0.000                       0                  4160  
+
+
+------------------------------------------------------------------------------------------------
+| Inter Clock Table
+| -----------------
+------------------------------------------------------------------------------------------------
+
+From Clock    To Clock          WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints  
+----------    --------          -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------  
+
+
+------------------------------------------------------------------------------------------------
+| Other Path Groups Table
+| -----------------------
+------------------------------------------------------------------------------------------------
+
+Path Group         From Clock         To Clock               WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints  
+----------         ----------         --------               -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------  
+**async_default**  clk_pl_0           clk_pl_0                 6.770        0.000                      0                 1537        1.195        0.000                      0                 1537  
+
+
+------------------------------------------------------------------------------------------------
+| Timing Details
+| --------------
+------------------------------------------------------------------------------------------------
+
+
+---------------------------------------------------------------------------------------------------
+From Clock:  clk_pl_0
+  To Clock:  clk_pl_0
+
+Setup :            0  Failing Endpoints,  Worst Slack        1.979ns,  Total Violation        0.000ns
+Hold  :            0  Failing Endpoints,  Worst Slack        0.015ns,  Total Violation        0.000ns
+PW    :            0  Failing Endpoints,  Worst Slack        3.500ns,  Total Violation        0.000ns
+---------------------------------------------------------------------------------------------------
+
+
+Max Delay Paths
+--------------------------------------------------------------------------------------
+Slack (MET) :             1.979ns  (required time - arrival time)
+  Source:                 design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/rs2_out_reg[1]/C
+                            (rising edge-triggered cell FDCE clocked by clk_pl_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/alu_result_out_reg[31]/D
+                            (rising edge-triggered cell FDCE clocked by clk_pl_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_pl_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_pl_0 rise@10.000ns - clk_pl_0 rise@0.000ns)
+  Data Path Delay:        7.745ns  (logic 4.010ns (51.779%)  route 3.735ns (48.221%))
+  Logic Levels:           19  (CARRY8=2 DSP_A_B_DATA=1 DSP_ALU=2 DSP_M_DATA=1 DSP_MULTIPLIER=1 DSP_OUTPUT=2 DSP_PREADD_DATA=1 LUT2=1 LUT3=2 LUT6=6)
+  Clock Path Skew:        -0.130ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    1.614ns = ( 11.614 - 10.000 ) 
+    Source Clock Delay      (SCD):    1.890ns
+    Clock Pessimism Removal (CPR):    0.147ns
+  Clock Uncertainty:      0.174ns  ((TSJ^2 + DJ^2)^1/2) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Discrete Jitter          (DJ):    0.340ns
+    Phase Error              (PE):    0.000ns
+  Clock Net Delay (Source):      1.683ns (routing 0.602ns, distribution 1.081ns)
+  Clock Net Delay (Destination): 1.447ns (routing 0.543ns, distribution 0.904ns)
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_pl_0 rise edge)
+                                                      0.000     0.000 r  
+    PS8_X0Y0             PS8                          0.000     0.000 r  design_1_i/zynq_ultra_ps_e_0/inst/PS8_i/PLCLK[0]
+                         net (fo=1, routed)           0.178     0.178    design_1_i/zynq_ultra_ps_e_0/inst/pl_clk_unbuffered[0]
+    BUFG_PS_X0Y80        BUFG_PS (Prop_BUFG_PS_I_O)
+                                                      0.029     0.207 r  design_1_i/zynq_ultra_ps_e_0/inst/buffer_pl_clk_0.PL_CLK_0_BUFG/O
+    X0Y2 (CLOCK_ROOT)    net (fo=4160, routed)        1.683     1.890    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/s00_axi_aclk
+    SLICE_X30Y159        FDCE                                         r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/rs2_out_reg[1]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X30Y159        FDCE (Prop_EFF_SLICEL_C_Q)
+                                                      0.096     1.986 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/rs2_out_reg[1]/Q
+                         net (fo=4, routed)           0.309     2.295    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/rs2_out_reg[4]_0[1]
+    SLICE_X30Y160        LUT3 (Prop_H5LUT_SLICEL_I1_O)
+                                                      0.134     2.429 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/dmem_bram_din[4]_INST_0_i_8/O
+                         net (fo=1, routed)           0.259     2.688    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/DEVICE_8SERIES.NO_BMM_INFO.TRUE_DP.SIMPLE_PRIM36.ram
+    SLICE_X30Y160        LUT6 (Prop_C6LUT_SLICEL_I0_O)
+                                                      0.098     2.786 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/dmem_bram_din[4]_INST_0_i_4/O
+                         net (fo=34, routed)          0.069     2.855    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/mem_wb_inst/forward_b[0]
+    SLICE_X30Y159        LUT6 (Prop_H6LUT_SLICEL_I5_O)
+                                                      0.040     2.895 f  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/mem_wb_inst/dmem_bram_din[31]_INST_0_i_1/O
+                         net (fo=30, routed)          0.579     3.474    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/mem_wb_inst/dmem_bram_din[31]_INST_0_i_1_n_0
+    SLICE_X24Y156        LUT6 (Prop_G6LUT_SLICEM_I0_O)
+                                                      0.148     3.622 f  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/mem_wb_inst/dmem_bram_din[8]_INST_0/O
+                         net (fo=10, routed)          0.575     4.196    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/DSP_A_B_DATA_INST_6
+    SLICE_X27Y167        LUT3 (Prop_H6LUT_SLICEL_I2_O)
+                                                      0.100     4.296 f  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/Result0_i_24/O
+                         net (fo=17, routed)          0.444     4.740    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__0/B[8]
+    DSP48E2_X6Y65        DSP_A_B_DATA (Prop_DSP_A_B_DATA_DSP48E2_B[8]_B2_DATA[8])
+                                                      0.195     4.935 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__0/DSP_A_B_DATA_INST/B2_DATA[8]
+                         net (fo=1, routed)           0.000     4.935    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__0/DSP_A_B_DATA.B2_DATA<8>
+    DSP48E2_X6Y65        DSP_PREADD_DATA (Prop_DSP_PREADD_DATA_DSP48E2_B2_DATA[8]_B2B1[8])
+                                                      0.092     5.027 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__0/DSP_PREADD_DATA_INST/B2B1[8]
+                         net (fo=1, routed)           0.000     5.027    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__0/DSP_PREADD_DATA.B2B1<8>
+    DSP48E2_X6Y65        DSP_MULTIPLIER (Prop_DSP_MULTIPLIER_DSP48E2_B2B1[8]_U[38])
+                                                      0.737     5.764 f  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__0/DSP_MULTIPLIER_INST/U[38]
+                         net (fo=1, routed)           0.000     5.764    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__0/DSP_MULTIPLIER.U<38>
+    DSP48E2_X6Y65        DSP_M_DATA (Prop_DSP_M_DATA_DSP48E2_U[38]_U_DATA[38])
+                                                      0.059     5.823 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__0/DSP_M_DATA_INST/U_DATA[38]
+                         net (fo=1, routed)           0.000     5.823    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__0/DSP_M_DATA.U_DATA<38>
+    DSP48E2_X6Y65        DSP_ALU (Prop_DSP_ALU_DSP48E2_U_DATA[38]_ALU_OUT[47])
+                                                      0.699     6.522 f  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__0/DSP_ALU_INST/ALU_OUT[47]
+                         net (fo=1, routed)           0.000     6.522    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__0/DSP_ALU.ALU_OUT<47>
+    DSP48E2_X6Y65        DSP_OUTPUT (Prop_DSP_OUTPUT_DSP48E2_ALU_OUT[47]_PCOUT[47])
+                                                      0.159     6.681 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__0/DSP_OUTPUT_INST/PCOUT[47]
+                         net (fo=1, routed)           0.042     6.723    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__1/PCIN[47]
+    DSP48E2_X6Y66        DSP_ALU (Prop_DSP_ALU_DSP48E2_PCIN[47]_ALU_OUT[0])
+                                                      0.698     7.421 f  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__1/DSP_ALU_INST/ALU_OUT[0]
+                         net (fo=1, routed)           0.000     7.421    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__1/DSP_ALU.ALU_OUT<0>
+    DSP48E2_X6Y66        DSP_OUTPUT (Prop_DSP_OUTPUT_DSP48E2_ALU_OUT[0]_P[0])
+                                                      0.141     7.562 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__1/DSP_OUTPUT_INST/P[0]
+                         net (fo=2, routed)           0.365     7.928    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/Result0__1_n_105
+    SLICE_X24Y162        LUT2 (Prop_B6LUT_SLICEM_I0_O)
+                                                      0.063     7.991 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/alu_result_out[19]_i_20/O
+                         net (fo=1, routed)           0.018     8.009    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/alu_result_out[19]_i_20_n_0
+    SLICE_X24Y162        CARRY8 (Prop_CARRY8_SLICEM_S[1]_CO[7])
+                                                      0.238     8.247 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/alu_result_out_reg[19]_i_5/CO[7]
+                         net (fo=1, routed)           0.028     8.275    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/alu_result_out_reg[19]_i_5_n_0
+    SLICE_X24Y163        CARRY8 (Prop_CARRY8_SLICEM_CI_O[7])
+                                                      0.146     8.421 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/alu_inst/alu_result_out_reg[27]_i_5/O[7]
+                         net (fo=1, routed)           0.611     9.032    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/alu_result_out[31]_i_2_0[7]
+    SLICE_X30Y154        LUT6 (Prop_H6LUT_SLICEL_I0_O)
+                                                      0.064     9.096 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/alu_result_out[31]_i_6/O
+                         net (fo=1, routed)           0.244     9.340    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/alu_result_out[31]_i_6_n_0
+    SLICE_X32Y153        LUT6 (Prop_G6LUT_SLICEM_I2_O)
+                                                      0.039     9.379 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/alu_result_out[31]_i_2/O
+                         net (fo=1, routed)           0.123     9.502    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/alu_result_out[31]_i_2_n_0
+    SLICE_X31Y153        LUT6 (Prop_G6LUT_SLICEM_I0_O)
+                                                      0.064     9.566 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/id_ex_inst/alu_result_out[31]_i_1/O
+                         net (fo=1, routed)           0.069     9.635    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/alu_result_out_reg[31]_1[31]
+    SLICE_X31Y153        FDCE                                         r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/alu_result_out_reg[31]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_pl_0 rise edge)
+                                                     10.000    10.000 r  
+    PS8_X0Y0             PS8                          0.000    10.000 r  design_1_i/zynq_ultra_ps_e_0/inst/PS8_i/PLCLK[0]
+                         net (fo=1, routed)           0.140    10.140    design_1_i/zynq_ultra_ps_e_0/inst/pl_clk_unbuffered[0]
+    BUFG_PS_X0Y80        BUFG_PS (Prop_BUFG_PS_I_O)
+                                                      0.027    10.167 r  design_1_i/zynq_ultra_ps_e_0/inst/buffer_pl_clk_0.PL_CLK_0_BUFG/O
+    X0Y2 (CLOCK_ROOT)    net (fo=4160, routed)        1.447    11.614    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/s00_axi_aclk
+    SLICE_X31Y153        FDCE                                         r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/alu_result_out_reg[31]/C
+                         clock pessimism              0.147    11.761    
+                         clock uncertainty           -0.174    11.587    
+    SLICE_X31Y153        FDCE (Setup_GFF_SLICEM_C_D)
+                                                      0.027    11.614    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/alu_result_out_reg[31]
+  -------------------------------------------------------------------
+                         required time                         11.614    
+                         arrival time                          -9.635    
+  -------------------------------------------------------------------
+                         slack                                  1.979    
+
+
+
+
+
+Min Delay Paths
+--------------------------------------------------------------------------------------
+Slack (MET) :             0.015ns  (arrival time - required time)
+  Source:                 design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/axi_rdata_reg[4]/C
+                            (rising edge-triggered cell FDRE clocked by clk_pl_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            design_1_i/ps8_0_axi_periph/m00_couplers/auto_pc/inst/gen_axilite.gen_b2s_conv.axilite_b2s/RD.r_channel_0/rd_data_fifo_0/memory_reg[31][4]_srl32/D
+                            (rising edge-triggered cell SRLC32E clocked by clk_pl_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_pl_0
+  Path Type:              Hold (Min at Slow Process Corner)
+  Requirement:            0.000ns  (clk_pl_0 rise@0.000ns - clk_pl_0 rise@0.000ns)
+  Data Path Delay:        0.343ns  (logic 0.070ns (20.408%)  route 0.273ns (79.592%))
+  Logic Levels:           0  
+  Clock Path Skew:        0.273ns (DCD - SCD - CPR)
+    Destination Clock Delay (DCD):    1.879ns
+    Source Clock Delay      (SCD):    1.507ns
+    Clock Pessimism Removal (CPR):    0.099ns
+  Clock Net Delay (Source):      1.340ns (routing 0.543ns, distribution 0.797ns)
+  Clock Net Delay (Destination): 1.672ns (routing 0.602ns, distribution 1.070ns)
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_pl_0 rise edge)
+                                                      0.000     0.000 r  
+    PS8_X0Y0             PS8                          0.000     0.000 r  design_1_i/zynq_ultra_ps_e_0/inst/PS8_i/PLCLK[0]
+                         net (fo=1, routed)           0.140     0.140    design_1_i/zynq_ultra_ps_e_0/inst/pl_clk_unbuffered[0]
+    BUFG_PS_X0Y80        BUFG_PS (Prop_BUFG_PS_I_O)
+                                                      0.027     0.167 r  design_1_i/zynq_ultra_ps_e_0/inst/buffer_pl_clk_0.PL_CLK_0_BUFG/O
+    X0Y2 (CLOCK_ROOT)    net (fo=4160, routed)        1.340     1.507    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/s00_axi_aclk
+    SLICE_X19Y167        FDRE                                         r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/axi_rdata_reg[4]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X19Y167        FDRE (Prop_CFF_SLICEL_C_Q)
+                                                      0.070     1.577 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/axi_rdata_reg[4]/Q
+                         net (fo=1, routed)           0.273     1.850    design_1_i/ps8_0_axi_periph/m00_couplers/auto_pc/inst/gen_axilite.gen_b2s_conv.axilite_b2s/RD.r_channel_0/rd_data_fifo_0/in[4]
+    SLICE_X18Y198        SRLC32E                                      r  design_1_i/ps8_0_axi_periph/m00_couplers/auto_pc/inst/gen_axilite.gen_b2s_conv.axilite_b2s/RD.r_channel_0/rd_data_fifo_0/memory_reg[31][4]_srl32/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_pl_0 rise edge)
+                                                      0.000     0.000 r  
+    PS8_X0Y0             PS8                          0.000     0.000 r  design_1_i/zynq_ultra_ps_e_0/inst/PS8_i/PLCLK[0]
+                         net (fo=1, routed)           0.178     0.178    design_1_i/zynq_ultra_ps_e_0/inst/pl_clk_unbuffered[0]
+    BUFG_PS_X0Y80        BUFG_PS (Prop_BUFG_PS_I_O)
+                                                      0.029     0.207 r  design_1_i/zynq_ultra_ps_e_0/inst/buffer_pl_clk_0.PL_CLK_0_BUFG/O
+    X0Y2 (CLOCK_ROOT)    net (fo=4160, routed)        1.672     1.879    design_1_i/ps8_0_axi_periph/m00_couplers/auto_pc/inst/gen_axilite.gen_b2s_conv.axilite_b2s/RD.r_channel_0/rd_data_fifo_0/aclk
+    SLICE_X18Y198        SRLC32E                                      r  design_1_i/ps8_0_axi_periph/m00_couplers/auto_pc/inst/gen_axilite.gen_b2s_conv.axilite_b2s/RD.r_channel_0/rd_data_fifo_0/memory_reg[31][4]_srl32/CLK
+                         clock pessimism             -0.099     1.780    
+    SLICE_X18Y198        SRLC32E (Hold_F6LUT_SLICEM_CLK_D)
+                                                      0.055     1.835    design_1_i/ps8_0_axi_periph/m00_couplers/auto_pc/inst/gen_axilite.gen_b2s_conv.axilite_b2s/RD.r_channel_0/rd_data_fifo_0/memory_reg[31][4]_srl32
+  -------------------------------------------------------------------
+                         required time                         -1.835    
+                         arrival time                           1.850    
+  -------------------------------------------------------------------
+                         slack                                  0.015    
+
+
+
+
+
+Pulse Width Checks
+--------------------------------------------------------------------------------------
+Clock Name:         clk_pl_0
+Waveform(ns):       { 0.000 5.000 }
+Period(ns):         10.000
+Sources:            { design_1_i/zynq_ultra_ps_e_0/inst/PS8_i/PLCLK[0] }
+
+Check Type        Corner  Lib Pin          Reference Pin  Required(ns)  Actual(ns)  Slack(ns)  Location  Pin
+Min Period        n/a     PS8/MAXIGP2ACLK  n/a            3.000         10.000      7.000      PS8_X0Y0  design_1_i/zynq_ultra_ps_e_0/inst/PS8_i/MAXIGP2ACLK
+Low Pulse Width   Slow    PS8/MAXIGP2ACLK  n/a            1.500         5.000       3.500      PS8_X0Y0  design_1_i/zynq_ultra_ps_e_0/inst/PS8_i/MAXIGP2ACLK
+High Pulse Width  Slow    PS8/MAXIGP2ACLK  n/a            1.500         5.000       3.500      PS8_X0Y0  design_1_i/zynq_ultra_ps_e_0/inst/PS8_i/MAXIGP2ACLK
+
+
+
+---------------------------------------------------------------------------------------------------
+Path Group:  **async_default**
+From Clock:  clk_pl_0
+  To Clock:  clk_pl_0
+
+Setup :            0  Failing Endpoints,  Worst Slack        6.770ns,  Total Violation        0.000ns
+Hold  :            0  Failing Endpoints,  Worst Slack        1.195ns,  Total Violation        0.000ns
+---------------------------------------------------------------------------------------------------
+
+
+Max Delay Paths
+--------------------------------------------------------------------------------------
+Slack (MET) :             6.770ns  (required time - arrival time)
+  Source:                 design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/slv_reg0_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by clk_pl_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/regfile_inst/regs_reg[3][29]/CLR
+                            (recovery check against rising-edge clock clk_pl_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             **async_default**
+  Path Type:              Recovery (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_pl_0 rise@10.000ns - clk_pl_0 rise@0.000ns)
+  Data Path Delay:        2.818ns  (logic 0.125ns (4.436%)  route 2.693ns (95.564%))
+  Logic Levels:           1  (BUFGCE=1)
+  Clock Path Skew:        -0.166ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    1.510ns = ( 11.510 - 10.000 ) 
+    Source Clock Delay      (SCD):    1.775ns
+    Clock Pessimism Removal (CPR):    0.099ns
+  Clock Uncertainty:      0.174ns  ((TSJ^2 + DJ^2)^1/2) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Discrete Jitter          (DJ):    0.340ns
+    Phase Error              (PE):    0.000ns
+  Clock Net Delay (Source):      1.568ns (routing 0.602ns, distribution 0.966ns)
+  Clock Net Delay (Destination): 1.343ns (routing 0.543ns, distribution 0.800ns)
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_pl_0 rise edge)
+                                                      0.000     0.000 r  
+    PS8_X0Y0             PS8                          0.000     0.000 r  design_1_i/zynq_ultra_ps_e_0/inst/PS8_i/PLCLK[0]
+                         net (fo=1, routed)           0.178     0.178    design_1_i/zynq_ultra_ps_e_0/inst/pl_clk_unbuffered[0]
+    BUFG_PS_X0Y80        BUFG_PS (Prop_BUFG_PS_I_O)
+                                                      0.029     0.207 r  design_1_i/zynq_ultra_ps_e_0/inst/buffer_pl_clk_0.PL_CLK_0_BUFG/O
+    X0Y2 (CLOCK_ROOT)    net (fo=4160, routed)        1.568     1.775    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/s00_axi_aclk
+    SLICE_X11Y194        FDRE                                         r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/slv_reg0_reg[0]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X11Y194        FDRE (Prop_HFF2_SLICEL_C_Q)
+                                                      0.097     1.872 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/slv_reg0_reg[0]/Q
+                         net (fo=1, routed)           1.254     3.126    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/slv_reg0_reg_n_0_[0]_bufg_place
+    BUFGCE_X0Y74         BUFGCE (Prop_BUFCE_BUFGCE_I_O)
+                                                      0.028     3.154 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/slv_reg0_reg[0]_bufg_place/O
+                         net (fo=1537, routed)        1.439     4.593    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/regfile_inst/regs_reg[31][0]_0
+    SLICE_X13Y158        FDCE                                         f  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/regfile_inst/regs_reg[3][29]/CLR  (IS_INVERTED)
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_pl_0 rise edge)
+                                                     10.000    10.000 r  
+    PS8_X0Y0             PS8                          0.000    10.000 r  design_1_i/zynq_ultra_ps_e_0/inst/PS8_i/PLCLK[0]
+                         net (fo=1, routed)           0.140    10.140    design_1_i/zynq_ultra_ps_e_0/inst/pl_clk_unbuffered[0]
+    BUFG_PS_X0Y80        BUFG_PS (Prop_BUFG_PS_I_O)
+                                                      0.027    10.167 r  design_1_i/zynq_ultra_ps_e_0/inst/buffer_pl_clk_0.PL_CLK_0_BUFG/O
+    X0Y2 (CLOCK_ROOT)    net (fo=4160, routed)        1.343    11.510    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/regfile_inst/s00_axi_aclk
+    SLICE_X13Y158        FDCE                                         r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/regfile_inst/regs_reg[3][29]/C
+                         clock pessimism              0.099    11.609    
+                         clock uncertainty           -0.174    11.435    
+    SLICE_X13Y158        FDCE (Recov_DFF2_SLICEM_C_CLR)
+                                                     -0.072    11.363    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/regfile_inst/regs_reg[3][29]
+  -------------------------------------------------------------------
+                         required time                         11.363    
+                         arrival time                          -4.593    
+  -------------------------------------------------------------------
+                         slack                                  6.770    
+
+
+
+
+
+Min Delay Paths
+--------------------------------------------------------------------------------------
+Slack (MET) :             1.195ns  (arrival time - required time)
+  Source:                 design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/slv_reg0_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by clk_pl_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/pc_plus4_out_reg[24]/CLR
+                            (removal check against rising-edge clock clk_pl_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             **async_default**
+  Path Type:              Removal (Min at Fast Process Corner)
+  Requirement:            0.000ns  (clk_pl_0 rise@0.000ns - clk_pl_0 rise@0.000ns)
+  Data Path Delay:        1.286ns  (logic 0.056ns (4.355%)  route 1.230ns (95.645%))
+  Logic Levels:           1  (BUFGCE=1)
+  Clock Path Skew:        0.111ns (DCD - SCD - CPR)
+    Destination Clock Delay (DCD):    1.085ns
+    Source Clock Delay      (SCD):    0.907ns
+    Clock Pessimism Removal (CPR):    0.067ns
+  Clock Net Delay (Source):      0.796ns (routing 0.307ns, distribution 0.489ns)
+  Clock Net Delay (Destination): 0.947ns (routing 0.347ns, distribution 0.600ns)
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_pl_0 rise edge)
+                                                      0.000     0.000 r  
+    PS8_X0Y0             PS8                          0.000     0.000 r  design_1_i/zynq_ultra_ps_e_0/inst/PS8_i/PLCLK[0]
+                         net (fo=1, routed)           0.094     0.094    design_1_i/zynq_ultra_ps_e_0/inst/pl_clk_unbuffered[0]
+    BUFG_PS_X0Y80        BUFG_PS (Prop_BUFG_PS_I_O)
+                                                      0.017     0.111 r  design_1_i/zynq_ultra_ps_e_0/inst/buffer_pl_clk_0.PL_CLK_0_BUFG/O
+    X0Y2 (CLOCK_ROOT)    net (fo=4160, routed)        0.796     0.907    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/s00_axi_aclk
+    SLICE_X11Y194        FDRE                                         r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/slv_reg0_reg[0]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X11Y194        FDRE (Prop_HFF2_SLICEL_C_Q)
+                                                      0.039     0.946 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/slv_reg0_reg[0]/Q
+                         net (fo=1, routed)           0.599     1.545    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/slv_reg0_reg_n_0_[0]_bufg_place
+    BUFGCE_X0Y74         BUFGCE (Prop_BUFCE_BUFGCE_I_O)
+                                                      0.017     1.562 r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/slv_reg0_reg[0]_bufg_place/O
+                         net (fo=1537, routed)        0.631     2.193    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/valid_out_reg_0
+    SLICE_X23Y176        FDCE                                         f  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/pc_plus4_out_reg[24]/CLR  (IS_INVERTED)
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_pl_0 rise edge)
+                                                      0.000     0.000 r  
+    PS8_X0Y0             PS8                          0.000     0.000 r  design_1_i/zynq_ultra_ps_e_0/inst/PS8_i/PLCLK[0]
+                         net (fo=1, routed)           0.120     0.120    design_1_i/zynq_ultra_ps_e_0/inst/pl_clk_unbuffered[0]
+    BUFG_PS_X0Y80        BUFG_PS (Prop_BUFG_PS_I_O)
+                                                      0.018     0.138 r  design_1_i/zynq_ultra_ps_e_0/inst/buffer_pl_clk_0.PL_CLK_0_BUFG/O
+    X0Y2 (CLOCK_ROOT)    net (fo=4160, routed)        0.947     1.085    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/s00_axi_aclk
+    SLICE_X23Y176        FDCE                                         r  design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/pc_plus4_out_reg[24]/C
+                         clock pessimism             -0.067     1.018    
+    SLICE_X23Y176        FDCE (Remov_EFF_SLICEL_C_CLR)
+                                                     -0.020     0.998    design_1_i/rv32i_pipelined_cpu_0/inst/rv32i_pipelined_cpu_v1_0_S00_AXI_inst/rv32i_pipeline_inst/ex_mem_inst/pc_plus4_out_reg[24]
+  -------------------------------------------------------------------
+                         required time                         -0.998    
+                         arrival time                           2.193    
+  -------------------------------------------------------------------
+                         slack                                  1.195    
+
+
+
+
+
