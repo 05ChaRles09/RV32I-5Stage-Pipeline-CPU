@@ -130,7 +130,12 @@ BMG 設定（`imem_bmg`、`dmem_bmg` 相同）：Stand Alone、True Dual Port、
 
 - setup 關鍵路徑一直是 **EX 階段：forwarding → 乘法器（DSP48E2 串接）→ `alu_result`**。
   IP 1.5 資料路徑 7.594 ns；IP 1.6 資料路徑 7.745 ns、19 級邏輯。
-- 依 WNS +1.979 ns 粗估頻率上限約 **125 MHz**（估算，未實際驗證）。
+- 依 WNS +1.979 ns 粗估頻率上限約 **125 MHz**（估算）。
+- 實板觀察：XDOTP16 效益量測時 PYNQ 回報 PL 時脈為 **187.498 MHz**，24 / 24 測試通過、週期數與模擬一致。
+  但 Vivado 時序是以 100 MHz 約束簽核，187.5 MHz 超出簽核範圍，只能寫成「此板此溫度下觀察到可運作」，不可當作 fmax 規格；
+  原因已查明：板上 PL0 的來源是 IOPLL（約 1500 MHz ÷ 8 = 187.5 MHz），而 Block Design 設定的是 RPLL（800 MHz ÷ 8 = 100 MHz）；
+  PS 的 PLL 由 PYNQ 開機映像決定，bitstream 不會改它。先前的板測很可能也是在 187.5 MHz 下完成（推定）。
+  Notebook 已改為載入後先設 100 MHz；待在 100 MHz 重跑。細節見 `docs/XDOTP16_BENCHMARK.md` 3b 節。
 - IP 1.6 的 All user specified timing constraints are met。
 
 ### 4.4 IP 1.6 功耗分項
@@ -237,6 +242,26 @@ BRAM Controller 模式鎖住深度與初始化檔；Validate 與 Connection Auto
 
 ---
 
+## 6b. XDOTP16 效益量測（FIR / 內積 / 矩陣乘）
+
+完整方法與數據見 `docs/XDOTP16_BENCHMARK.md`。同一顆 CPU（IP 1.6）、同一份 bitstream，只換程式；
+RTL 模擬週期數（12 支程式的 DMEM 結果與黃金模型逐字一致）：
+
+| Kernel | S0 純標量（未打包） | S2 標量 + Zbb 拆包 | X（XDOTP16） | X vs S0 | X vs S2 |
+|---|---|---|---|---|---|
+| dot（128 元素） | 598 | 726 | 342 | 1.75x | 2.12x |
+| fir（8 taps、16 輸出） | 380 | 513 | 249 | 1.53x | 2.06x |
+| matmul（8x8） | 1789 | 2077 | 989 | 1.81x | 2.10x |
+
+- 打包資料在沒有 XDOTP16 時反而更慢（S1 為 0.65x 到 0.76x，S2 為 0.74x 到 0.86x，皆相對 S0），拆包要多出 shift / `sext_h` 指令。
+- 加速比低於理論 2 倍，因為 load、指標更新與分支開銷不會減少。
+- 硬體代價：多 2 個 DSP48E2，WNS 仍為正。
+- **實板驗證（2026-10-18，IP 1.6）**：`RV32I_CPU_Benchmark.ipynb` 24 / 24 PASS；12 支程式的 DMEM 結果與黃金模型一致，
+  板上每次重複的週期數與模擬相差 0.05% 到 0.07%（例如 fir X：板上 250.1、模擬 250；matmul X：板上 990.5、模擬 990）。加速比因此在實板上成立。
+- 實測時 PYNQ 回報 PL 時脈 187.498 MHz（Vivado 約束為 100 MHz），見下方 4.3 與 `docs/XDOTP16_BENCHMARK.md` 3b 節。
+
+---
+
 ## 7. 心得與教訓
 
 1. **驗證要涵蓋實際上板的路徑。** 模擬若只從檔案載入程式，就漏掉合成進 bitstream 的預設內容（Bug 10）。
@@ -257,7 +282,7 @@ BRAM Controller 模式鎖住深度與初始化檔；Validate 與 Connection Auto
 
 - **CPU 執行中由 PS 寫入 IMEM / DMEM 的行為尚未驗證**；目前只在 CPU reset 時載入程式（L8 只驗證了執行中「讀取」）。
 - 記憶體只有 4 KB（IMEM、DMEM 各 1024 字），16 KB 版本尚未上板。
-- 頻率上限 125 MHz 為依 WNS 的估算，未實際以更高時脈驗證。
+- 頻率上限 125 MHz 為依 WNS 的估算；板上曾在 187.5 MHz（PYNQ 預設的 PL0 時脈，與 BD 的 100 MHz 不同）運作，超出 Vivado 簽核範圍（見 4.3）；未以 187.5 MHz 約束重新 Implementation。
 - WHS 餘裕小（+0.015 ns），重跑 Implementation 可能浮動。
 - 功耗為工具估算值（Confidence Medium），未實測。
 - 尚未跑官方 riscv-arch-test；ISA 合規性目前由自建黃金模型與測試程式涵蓋。
@@ -266,7 +291,7 @@ BRAM Controller 模式鎖住深度與初始化檔；Validate 與 Connection Auto
 
 | 項目 | 說明 | 預期成本 / 風險 |
 |---|---|---|
-| FIR / kernel 週期數比較 | 同一段程式比較純 RV32I 與使用 XDOTP16 的 cycle 數，量化加速比 | 中；只需新增測試程式，不改硬體 |
+| 在 100 MHz 重跑 Board Test v5 與 Benchmark Notebook | 兩本 Notebook 已加入 `Clocks.fclk0_mhz = 100` | 低 |
 | riscv-arch-test | 以官方測試套件證明 RV32I 合規 | 中高；需設定工具鏈與簽章比對 |
 | 記憶體放大到 16 KB | 調整 BMG 深度與 controller 位址範圍，重跑 Vivado 與板測 | 中；要重跑完整流程 |
 | XDOTP16 累加版 | 第三個讀取埠，修改 forwarding / hazard | 高；時序風險最大 |
@@ -284,4 +309,5 @@ BRAM Controller 模式鎖住深度與初始化檔；Validate 與 Connection Auto
 | IP 打包教訓 | `docs/IP_PACKAGING_LESSONS.md` |
 | 實板測試報告（IP 1.6） | `pynq_5-stage-pipeline-CPU_TEST/cpu_test_report_v5_ip1.6_52of52.json` |
 | 實板 Notebook | `pynq_5-stage-pipeline-CPU_TEST/RV32I_CPU_Board_Test_v5.ipynb` |
+| XDOTP16 效益量測 | `docs/XDOTP16_BENCHMARK.md`、`sim/bench/`、`pynq_5-stage-pipeline-CPU_TEST/RV32I_CPU_Benchmark.ipynb` |
 | COE 產生器 | `tools/gen_coe.py`；`bram_init/imem_board_program.coe` |

@@ -1,0 +1,542 @@
+[
+ {
+  "kernel": "dot",
+  "var": "S0",
+  "fmt": "u",
+  "file": "dot_S0.hex",
+  "words": 41,
+  "spin_pc": 160,
+  "n_instr": 565,
+  "n_taken": 15,
+  "n_loads": 256,
+  "reps": {
+   "2": {
+    "file": "dot_S0_rep2.hex",
+    "spin_pc": 176,
+    "words": 45,
+    "n_instr": 1136
+   },
+   "3": {
+    "file": "dot_S0_rep3.hex",
+    "spin_pc": 176,
+    "words": 45,
+    "n_instr": 1703
+   }
+  },
+  "cycles": 598,
+  "stall": 0,
+  "flush": 16,
+  "mismatch": 0,
+  "reps_result": {
+   "2": {
+    "cycles": 1201,
+    "stall": 0,
+    "flush": 32,
+    "mismatch": 0
+   },
+   "3": {
+    "cycles": 1800,
+    "stall": 0,
+    "flush": 48,
+    "mismatch": 0
+   }
+  },
+  "rep_period": 599,
+  "mismatch_all": 0
+ },
+ {
+  "kernel": "dot",
+  "var": "S1",
+  "fmt": "p",
+  "file": "dot_S1.hex",
+  "words": 57,
+  "spin_pc": 224,
+  "n_instr": 821,
+  "n_taken": 15,
+  "n_loads": 128,
+  "reps": {
+   "2": {
+    "file": "dot_S1_rep2.hex",
+    "spin_pc": 240,
+    "words": 61,
+    "n_instr": 1648
+   },
+   "3": {
+    "file": "dot_S1_rep3.hex",
+    "spin_pc": 240,
+    "words": 61,
+    "n_instr": 2471
+   }
+  },
+  "cycles": 854,
+  "stall": 0,
+  "flush": 16,
+  "mismatch": 0,
+  "reps_result": {
+   "2": {
+    "cycles": 1713,
+    "stall": 0,
+    "flush": 32,
+    "mismatch": 0
+   },
+   "3": {
+    "cycles": 2568,
+    "stall": 0,
+    "flush": 48,
+    "mismatch": 0
+   }
+  },
+  "rep_period": 855,
+  "mismatch_all": 0
+ },
+ {
+  "kernel": "dot",
+  "var": "S2",
+  "fmt": "p",
+  "file": "dot_S2.hex",
+  "words": 49,
+  "spin_pc": 192,
+  "n_instr": 693,
+  "n_taken": 15,
+  "n_loads": 128,
+  "reps": {
+   "2": {
+    "file": "dot_S2_rep2.hex",
+    "spin_pc": 208,
+    "words": 53,
+    "n_instr": 1392
+   },
+   "3": {
+    "file": "dot_S2_rep3.hex",
+    "spin_pc": 208,
+    "words": 53,
+    "n_instr": 2087
+   }
+  },
+  "cycles": 726,
+  "stall": 0,
+  "flush": 16,
+  "mismatch": 0,
+  "reps_result": {
+   "2": {
+    "cycles": 1457,
+    "stall": 0,
+    "flush": 32,
+    "mismatch": 0
+   },
+   "3": {
+    "cycles": 2184,
+    "stall": 0,
+    "flush": 48,
+    "mismatch": 0
+   }
+  },
+  "rep_period": 727,
+  "mismatch_all": 0
+ },
+ {
+  "kernel": "dot",
+  "var": "X",
+  "fmt": "p",
+  "file": "dot_X.hex",
+  "words": 25,
+  "spin_pc": 96,
+  "n_instr": 309,
+  "n_taken": 15,
+  "n_loads": 128,
+  "reps": {
+   "2": {
+    "file": "dot_X_rep2.hex",
+    "spin_pc": 112,
+    "words": 29,
+    "n_instr": 624
+   },
+   "3": {
+    "file": "dot_X_rep3.hex",
+    "spin_pc": 112,
+    "words": 29,
+    "n_instr": 935
+   }
+  },
+  "cycles": 342,
+  "stall": 0,
+  "flush": 16,
+  "mismatch": 0,
+  "reps_result": {
+   "2": {
+    "cycles": 689,
+    "stall": 0,
+    "flush": 32,
+    "mismatch": 0
+   },
+   "3": {
+    "cycles": 1032,
+    "stall": 0,
+    "flush": 48,
+    "mismatch": 0
+   }
+  },
+  "rep_period": 343,
+  "mismatch_all": 0
+ },
+ {
+  "kernel": "fir",
+  "var": "S0",
+  "fmt": "u",
+  "file": "fir_S0.hex",
+  "words": 56,
+  "spin_pc": 220,
+  "n_instr": 363,
+  "n_taken": 7,
+  "n_loads": 80,
+  "reps": {
+   "2": {
+    "file": "fir_S0_rep2.hex",
+    "spin_pc": 236,
+    "words": 60,
+    "n_instr": 732
+   },
+   "3": {
+    "file": "fir_S0_rep3.hex",
+    "spin_pc": 236,
+    "words": 60,
+    "n_instr": 1097
+   }
+  },
+  "cycles": 380,
+  "stall": 0,
+  "flush": 8,
+  "mismatch": 0,
+  "reps_result": {
+   "2": {
+    "cycles": 765,
+    "stall": 0,
+    "flush": 16,
+    "mismatch": 0
+   },
+   "3": {
+    "cycles": 1146,
+    "stall": 0,
+    "flush": 24,
+    "mismatch": 0
+   }
+  },
+  "rep_period": 381,
+  "mismatch_all": 0
+ },
+ {
+  "kernel": "fir",
+  "var": "S1",
+  "fmt": "p",
+  "file": "fir_S1.hex",
+  "words": 89,
+  "spin_pc": 352,
+  "n_instr": 564,
+  "n_taken": 7,
+  "n_loads": 68,
+  "reps": {
+   "2": {
+    "file": "fir_S1_rep2.hex",
+    "spin_pc": 368,
+    "words": 93,
+    "n_instr": 1134
+   },
+   "3": {
+    "file": "fir_S1_rep3.hex",
+    "spin_pc": 368,
+    "words": 93,
+    "n_instr": 1700
+   }
+  },
+  "cycles": 581,
+  "stall": 0,
+  "flush": 8,
+  "mismatch": 0,
+  "reps_result": {
+   "2": {
+    "cycles": 1167,
+    "stall": 0,
+    "flush": 16,
+    "mismatch": 0
+   },
+   "3": {
+    "cycles": 1749,
+    "stall": 0,
+    "flush": 24,
+    "mismatch": 0
+   }
+  },
+  "rep_period": 582,
+  "mismatch_all": 0
+ },
+ {
+  "kernel": "fir",
+  "var": "S2",
+  "fmt": "p",
+  "file": "fir_S2.hex",
+  "words": 77,
+  "spin_pc": 304,
+  "n_instr": 496,
+  "n_taken": 7,
+  "n_loads": 68,
+  "reps": {
+   "2": {
+    "file": "fir_S2_rep2.hex",
+    "spin_pc": 320,
+    "words": 81,
+    "n_instr": 998
+   },
+   "3": {
+    "file": "fir_S2_rep3.hex",
+    "spin_pc": 320,
+    "words": 81,
+    "n_instr": 1496
+   }
+  },
+  "cycles": 513,
+  "stall": 0,
+  "flush": 8,
+  "mismatch": 0,
+  "reps_result": {
+   "2": {
+    "cycles": 1031,
+    "stall": 0,
+    "flush": 16,
+    "mismatch": 0
+   },
+   "3": {
+    "cycles": 1545,
+    "stall": 0,
+    "flush": 24,
+    "mismatch": 0
+   }
+  },
+  "rep_period": 514,
+  "mismatch_all": 0
+ },
+ {
+  "kernel": "fir",
+  "var": "X",
+  "fmt": "p",
+  "file": "fir_X.hex",
+  "words": 37,
+  "spin_pc": 144,
+  "n_instr": 232,
+  "n_taken": 7,
+  "n_loads": 68,
+  "reps": {
+   "2": {
+    "file": "fir_X_rep2.hex",
+    "spin_pc": 160,
+    "words": 41,
+    "n_instr": 470
+   },
+   "3": {
+    "file": "fir_X_rep3.hex",
+    "spin_pc": 160,
+    "words": 41,
+    "n_instr": 704
+   }
+  },
+  "cycles": 249,
+  "stall": 0,
+  "flush": 8,
+  "mismatch": 0,
+  "reps_result": {
+   "2": {
+    "cycles": 503,
+    "stall": 0,
+    "flush": 16,
+    "mismatch": 0
+   },
+   "3": {
+    "cycles": 753,
+    "stall": 0,
+    "flush": 24,
+    "mismatch": 0
+   }
+  },
+  "rep_period": 250,
+  "mismatch_all": 0
+ },
+ {
+  "kernel": "matmul",
+  "var": "S0",
+  "fmt": "u",
+  "file": "matmul_S0.hex",
+  "words": 67,
+  "spin_pc": 264,
+  "n_instr": 1724,
+  "n_taken": 31,
+  "n_loads": 576,
+  "reps": {
+   "2": {
+    "file": "matmul_S0_rep2.hex",
+    "spin_pc": 280,
+    "words": 71,
+    "n_instr": 3454
+   },
+   "3": {
+    "file": "matmul_S0_rep3.hex",
+    "spin_pc": 280,
+    "words": 71,
+    "n_instr": 5180
+   }
+  },
+  "cycles": 1789,
+  "stall": 0,
+  "flush": 32,
+  "mismatch": 0,
+  "reps_result": {
+   "2": {
+    "cycles": 3583,
+    "stall": 0,
+    "flush": 64,
+    "mismatch": 0
+   },
+   "3": {
+    "cycles": 5373,
+    "stall": 0,
+    "flush": 96,
+    "mismatch": 0
+   }
+  },
+  "rep_period": 1790,
+  "mismatch_all": 0
+ },
+ {
+  "kernel": "matmul",
+  "var": "S1",
+  "fmt": "p",
+  "file": "matmul_S1.hex",
+  "words": 91,
+  "spin_pc": 360,
+  "n_instr": 2300,
+  "n_taken": 31,
+  "n_loads": 288,
+  "reps": {
+   "2": {
+    "file": "matmul_S1_rep2.hex",
+    "spin_pc": 376,
+    "words": 95,
+    "n_instr": 4606
+   },
+   "3": {
+    "file": "matmul_S1_rep3.hex",
+    "spin_pc": 376,
+    "words": 95,
+    "n_instr": 6908
+   }
+  },
+  "cycles": 2365,
+  "stall": 0,
+  "flush": 32,
+  "mismatch": 0,
+  "reps_result": {
+   "2": {
+    "cycles": 4735,
+    "stall": 0,
+    "flush": 64,
+    "mismatch": 0
+   },
+   "3": {
+    "cycles": 7101,
+    "stall": 0,
+    "flush": 96,
+    "mismatch": 0
+   }
+  },
+  "rep_period": 2366,
+  "mismatch_all": 0
+ },
+ {
+  "kernel": "matmul",
+  "var": "S2",
+  "fmt": "p",
+  "file": "matmul_S2.hex",
+  "words": 79,
+  "spin_pc": 312,
+  "n_instr": 2012,
+  "n_taken": 31,
+  "n_loads": 288,
+  "reps": {
+   "2": {
+    "file": "matmul_S2_rep2.hex",
+    "spin_pc": 328,
+    "words": 83,
+    "n_instr": 4030
+   },
+   "3": {
+    "file": "matmul_S2_rep3.hex",
+    "spin_pc": 328,
+    "words": 83,
+    "n_instr": 6044
+   }
+  },
+  "cycles": 2077,
+  "stall": 0,
+  "flush": 32,
+  "mismatch": 0,
+  "reps_result": {
+   "2": {
+    "cycles": 4159,
+    "stall": 0,
+    "flush": 64,
+    "mismatch": 0
+   },
+   "3": {
+    "cycles": 6237,
+    "stall": 0,
+    "flush": 96,
+    "mismatch": 0
+   }
+  },
+  "rep_period": 2078,
+  "mismatch_all": 0
+ },
+ {
+  "kernel": "matmul",
+  "var": "X",
+  "fmt": "p",
+  "file": "matmul_X.hex",
+  "words": 39,
+  "spin_pc": 152,
+  "n_instr": 924,
+  "n_taken": 31,
+  "n_loads": 288,
+  "reps": {
+   "2": {
+    "file": "matmul_X_rep2.hex",
+    "spin_pc": 168,
+    "words": 43,
+    "n_instr": 1854
+   },
+   "3": {
+    "file": "matmul_X_rep3.hex",
+    "spin_pc": 168,
+    "words": 43,
+    "n_instr": 2780
+   }
+  },
+  "cycles": 989,
+  "stall": 0,
+  "flush": 32,
+  "mismatch": 0,
+  "reps_result": {
+   "2": {
+    "cycles": 1983,
+    "stall": 0,
+    "flush": 64,
+    "mismatch": 0
+   },
+   "3": {
+    "cycles": 2973,
+    "stall": 0,
+    "flush": 96,
+    "mismatch": 0
+   }
+  },
+  "rep_period": 990,
+  "mismatch_all": 0
+ }
+]

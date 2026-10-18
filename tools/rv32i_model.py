@@ -232,11 +232,14 @@ def _base_r(n, a, b):
             "xor": a ^ b, "srl": a >> (b & 31), "sra": s32(a) >> (b & 31), "or": a | b, "and": a & b}[n] & M32
 
 
-def run(prog, max_steps=50000, mem_words=1024):   # dmem.v: 4096 位元組 = 1024 字（索引 addr[11:2]）
+def run(prog, max_steps=50000, mem_words=1024, mem0=None):   # dmem.v: 4096 位元組 = 1024 字（索引 addr[11:2]）
     """執行到「自我跳躍」(spin) 為止。
-    回傳 dict: regs[32], mem{word_index: value}, wb[(rd,val)...] (rd!=0, 程式順序), illegal[pc...], pc"""
+    mem0：預先載入的 DMEM（{字索引: 值}），用於 benchmark（資料由 PS 事先寫入）。
+    回傳 dict: regs[32], mem{word_index: value}, wb[(rd,val)...] (rd!=0, 程式順序), illegal[pc...], pc,
+               n_instr（執行的指令數，不含最後的 spin 指令）、n_taken（成立的分支 + jal/jalr 次數）、n_loads（lw 次數）"""
     x = [0] * 32
-    mem = {}
+    mem = dict(mem0) if mem0 else {}
+    n_instr = n_taken = n_loads = 0
     wb, illegal, winfo = [], [], []
     pc = 0
     for _ in range(max_steps):
@@ -293,5 +296,10 @@ def run(prog, max_steps=50000, mem_words=1024):   # dmem.v: 4096 位元組 = 102
             winfo.append((pc, d[0], rd, val & M32))      # (指令 PC, 助記符, rd, 值)
         if npc == pc:
             break
+        n_instr += 1
+        if d is not None:
+            if d[0] == "lw": n_loads += 1
+            if npc != ((pc + 4) & M32): n_taken += 1
         pc = npc
-    return {"regs": x, "mem": mem, "wb": wb, "winfo": winfo, "illegal": illegal, "pc": pc}
+    return {"regs": x, "mem": mem, "wb": wb, "winfo": winfo, "illegal": illegal, "pc": pc,
+            "n_instr": n_instr, "n_taken": n_taken, "n_loads": n_loads}
