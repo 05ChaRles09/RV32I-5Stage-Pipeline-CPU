@@ -197,7 +197,7 @@ SIZE = 0x10000
 ├── tools/                Python 黃金模型與測試資料產生器（選用，Vivado 流程不需要）
 ├── pynq_5-stage-pipeline-CPU_TEST/
 │                         板上測試 Notebook、.bit / .hwh、測試報告 JSON
-├── docs/                 Vivado 使用指南、Stage 2b 操作與踩雷、IP 打包踩雷紀錄、開發紀錄與 Bug 整理、專題成果報告素材（PROJECT_REPORT_MATERIALS.md）
+├── docs/                 Vivado 使用指南、Stage 2b 操作與踩雷、IP 打包踩雷紀錄、開發紀錄與 Bug 整理、專題成果報告素材（PROJECT_REPORT_MATERIALS.md）、XDOTP16 效益量測（XDOTP16_BENCHMARK.md）
 │   └── vivado_reports/   各 IP 版本的 util / timing / power 原始報告（ip1.5、ip1.6）
 ├── constrs/              constraints.xdc（整合設計：不需額外約束，內含說明）、constraints_standalone.xdc（單獨合成 CPU 核心用）
 └── README.md
@@ -226,6 +226,8 @@ SIZE = 0x10000
 | `tb_imem_default` | `imem.v` 內建（寫死）程式完整性，也就是合成進 bitstream 的內容 |
 | `tb_bram_timing` | BRAM 同步讀取的時序邊界：store→load 緊接、load-use stall 時取指保持、load 結果當 store 資料、load-use 後接 taken branch、jal 重導向、迴圈 RAW（預期值由 Python 黃金模型產生） |
 | `tb_axi_bram_system` | Stage 2b 系統層級：CPU IP（`EXTERNAL_MEM=1`）+ 兩個 BMG 行為模型（`sim/bmg_tdp_model.v`，port A 當 PS）。COE 式初始化程式執行、PS 讀回 IMEM / DMEM、PS 清空 DMEM 並載入另一支程式後執行、執行中 PS 讀 DMEM 不影響 CPU（只用於模擬，不要加進 IP） |
+
+另有效益量測 `tb_bench`（`sim/run_bench.py`）：3 個 kernel x 4 種實作共 12 支程式（含重複版），DMEM 結果與黃金模型逐字一致，並量測週期數，結果見 [`docs/XDOTP16_BENCHMARK.md`](docs/XDOTP16_BENCHMARK.md)。
 
 測試有效性以突變測試確認：故意把 `MUL` 改成加法、把 `XDOTP16` 改成減法或接錯半字，以及重現 `imem.v` 填充迴圈的舊錯誤，對應測試都會失敗。
 
@@ -295,7 +297,7 @@ Vivado 2022.2，裝置 `xczu5eg-sfvc784-1-i`（PYNQ-ZU），Implementation 完�
 - DSP48E2 共 5 個：`MUL` 3 個 + `XDOTP16` 2 個。
 - 以上數字是 **Stage 1（LUTRAM、組合讀取）** 的量測結果：Instruction / Data Memory 與 Register File 以 Distributed RAM 實作，不使用 Block RAM。Stage 2a 之後的重新量測結果見下一小節。
 - 所有時序皆已滿足，但 hold slack 僅 +0.001 ns，不同 Implementation run 之間可能浮動。
-- 設計時脈為 PL clock 100 MHz（10 ns 約束）。以 setup slack +1.977 ns 粗估，關鍵路徑約 8 ns（約 125 MHz 上限）；此為依 slack 的估算，不是實際拉高時脈後的量測。
+- 設計時脈為 PL clock 100 MHz（10 ns 約束）。以 setup slack +1.977 ns 粗估，關鍵路徑約 8 ns（約 125 MHz 上限）；此為依 slack 的估算。另外，PYNQ-ZU 板上 PL0 的實際來源是 IOPLL（約 1500 MHz ÷ 8 = 187.5 MHz），與 Block Design 設定的 100 MHz 不同；XDOTP16 效益量測的第一次實板測試因此是在 187.498 MHz 下全部通過，超出 100 MHz 約束的簽核範圍，僅代表此板此溫度下可運作，不是時序保證。Notebook v5 與 Benchmark 現在載入後會先把 PL 時脈設為 100 MHz（見 [`docs/XDOTP16_BENCHMARK.md`](docs/XDOTP16_BENCHMARK.md) 3b 節）。
 
 #### Stage 2a（IP 1.5）：IMEM/DMEM 改為 BRAM 同步讀取後重新量測
 
@@ -412,7 +414,7 @@ RV32I CPU
 - [x] **Zbb：`ROL` / `ROR`**
 - [x] **Custom `XDOTP16`**（不累加版，模擬與實板皆通過）
 - [ ] `XDOTP16` 累加版（`rd += 內積`，需第三個讀取埠與 forwarding / hazard 修改）
-- [ ] 以 FIR 或影像 kernel 比較使用與未使用 `XDOTP16` 的週期數
+- [x] 以 FIR / 內積 / 矩陣乘比較使用與未使用 `XDOTP16` 的週期數（RTL 模擬：比純標量快 1.5～1.8 倍；實板 24/24 PASS，板上週期數與模擬一致；見 [`docs/XDOTP16_BENCHMARK.md`](docs/XDOTP16_BENCHMARK.md)）
 
 `XDOTP16` 作為自訂指令，用於展示 instruction decode、datapath 與 ALU／functional unit 的硬體擴充。
 
