@@ -135,7 +135,8 @@ BMG 設定（`imem_bmg`、`dmem_bmg` 相同）：Stand Alone、True Dual Port、
   但 Vivado 時序是以 100 MHz 約束簽核，187.5 MHz 超出簽核範圍，只能寫成「此板此溫度下觀察到可運作」，不可當作 fmax 規格；
   原因已查明：板上 PL0 的來源是 IOPLL（約 1500 MHz ÷ 8 = 187.5 MHz），而 Block Design 設定的是 RPLL（800 MHz ÷ 8 = 100 MHz）；
   PS 的 PLL 由 PYNQ 開機映像決定，bitstream 不會改它。先前的板測很可能也是在 187.5 MHz 下完成（推定）。
-  Notebook 已改為載入後先設 100 MHz；待在 100 MHz 重跑。細節見 `docs/XDOTP16_BENCHMARK.md` 3b 節。
+  Notebook 已改為載入後先設 100 MHz，並已在 **100 MHz 重跑通過**：Benchmark 24 / 24（`clk_mhz` = 99.999，板上與模擬週期比值 1.0002）、
+  Board Test v5 52 / 52。細節見 `docs/XDOTP16_BENCHMARK.md` 3b、3c 節。
 - IP 1.6 的 All user specified timing constraints are met。
 
 ### 4.4 IP 1.6 功耗分項
@@ -162,6 +163,13 @@ PS8 2.158 W、CPU IP 0.039 W、`ps8_0_axi_periph` 0.009 W、`dmem_bmg` 0.003 W�
 `tb_zbb_prog`（40 支程式，含 MUL 與 XDOTP16）、`tb_board_program`（上板 136 字程式）、`tb_imem_default`（內建預設內容）、
 `tb_bram_timing`（BRAM 同步讀取時序邊界）、`tb_axi_bram_system`（CPU IP + BMG 行為模型的系統層級測試）。
 
+### 5.2b 官方 riscv-arch-test
+- 範圍：RV32I 38 項、RV32M 8 項、Zbb 18 項，共 64 項；核心支援的 **51 項全部通過**，13 項（`lb/lbu/lh/lhu/sb/sh`、`mulh/mulhsu/mulhu/div/divu/rem/remu`）因核心刻意未實作而預期 FAIL。
+- 參考簽章：I / M 用官方 `reference_output`（old-framework-2.x）；Zbb 用 QEMU 8.2.2（先以 46 項官方簽章驗證 QEMU，46/46 相同）。
+- 環境：模擬、IMEM / DMEM 各 2 MB；`fence` 被當 NOP（illegal 旗標 = 1）仍通過。
+- 突變測試：10 種植入錯誤中 9 種被抓到；未抓到的是 load-use stall 關閉（ISA 層級測試不製造 hazard；自建 `tb_bram_timing` 5 個失敗、`tb_zbb_prog` 48 個失敗可抓到）。
+- 限制與重現：見 `docs/ARCH_TEST.md`。
+
 ### 5.3 突變測試
 
 | 突變 | 預期被哪個測試抓到 | 結果 |
@@ -184,7 +192,7 @@ PS8 2.158 W、CPU IP 0.039 W、`ps8_0_axi_periph` 0.009 W、`dmem_bmg` 0.003 W�
 | + MUL | 39 / 39 | 115 字程式、85 筆寫回、8 條非法指令 |
 | + XDOTP16（IP 1.3） | 40 / 40 | 136 字程式、102 筆寫回、XDOTP16 10 筆全對；曾因 Bug 10 失敗一次 |
 | Phase 4（IP 1.4 ~ 1.5） | 48 項 | PS 載入程式（L1 ~ L7），含 L6 的 8470 筆寫回比對 |
-| IP 1.6（Notebook v5） | **52 / 52** | T1 ~ T8（40 項）+ L1 ~ L9 |
+| IP 1.6（Notebook v5） | **52 / 52** | T1 ~ T8（40 項）+ L1 ~ L9；另已在 PL 時脈 100 MHz 重跑 52 / 52（報告檔未記錄時脈，依設定與同時段 Benchmark 量到 99.999 MHz 推定） |
 
 Notebook v5 的 L 系列：
 - L1 FEATURE = 0x17
@@ -285,14 +293,14 @@ RTL 模擬週期數（12 支程式的 DMEM 結果與黃金模型逐字一致）�
 - 頻率上限 125 MHz 為依 WNS 的估算；板上曾在 187.5 MHz（PYNQ 預設的 PL0 時脈，與 BD 的 100 MHz 不同）運作，超出 Vivado 簽核範圍（見 4.3）；未以 187.5 MHz 約束重新 Implementation。
 - WHS 餘裕小（+0.015 ns），重跑 Implementation 可能浮動。
 - 功耗為工具估算值（Confidence Medium），未實測。
-- 尚未跑官方 riscv-arch-test；ISA 合規性目前由自建黃金模型與測試程式涵蓋。
+- riscv-arch-test 只在模擬中以 2 MB 記憶體執行（核心支援的 51 項全過），尚未在 4 KB 實板記憶體上跑；它是 ISA 層級測試，不涵蓋流水線 hazard 組合（突變測試中 load-use stall 關閉未被抓到，由自建 testbench 抓到）。詳見 `docs/ARCH_TEST.md`。
 
 ### 未來工作
 
 | 項目 | 說明 | 預期成本 / 風險 |
 |---|---|---|
-| 在 100 MHz 重跑 Board Test v5 與 Benchmark Notebook | 兩本 Notebook 已加入 `Clocks.fclk0_mhz = 100` | 低 |
-| riscv-arch-test | 以官方測試套件證明 RV32I 合規 | 中高；需設定工具鏈與簽章比對 |
+| ~~riscv-arch-test~~（已完成） | 官方套件：RV32I 32/38、`MUL` 1/8、Zbb 18/18 通過，其餘 13 項為未實作指令（預期 FAIL） | 完成；見 `docs/ARCH_TEST.md` |
+| 補齊 `lb/lh/sb/sh`、`MULH*`、`DIV/REM` | 讓 arch-test 剩餘 13 項通過 | 中；`lb/sb` 需 byte enable |
 | 記憶體放大到 16 KB | 調整 BMG 深度與 controller 位址範圍，重跑 Vivado 與板測 | 中；要重跑完整流程 |
 | XDOTP16 累加版 | 第三個讀取埠，修改 forwarding / hazard | 高；時序風險最大 |
 | 執行中 PS 寫入記憶體 | 驗證 true dual port 在兩側同時存取下的行為 | 中 |

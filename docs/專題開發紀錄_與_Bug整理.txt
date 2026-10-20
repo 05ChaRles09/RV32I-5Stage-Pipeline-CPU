@@ -295,9 +295,14 @@ Phase 4 數據（IP 1.5 → 1.6）：
     注意：實測 PYNQ 回報 PL 時脈 187.498 MHz（Vivado 約束 100 MHz），超出簽核範圍。
     原因（板上讀暫存器診斷）：板上 PL0 來源為 IOPLL（約 1500 MHz ÷ 8 = 187.5 MHz），BD 設定的是 RPLL（800 MHz ÷ 8 = 100 MHz）；
     PS 的 PLL 由 PYNQ 開機映像決定，bitstream 不會改。先前板測很可能也在 187.5 MHz（推定）。
-    處理：Notebook v5 與 Benchmark 的 cell ① 加入 Clocks.fclk0_mhz = 100；待在 100 MHz 重跑（見 XDOTP16_BENCHMARK.md 3b）。
+    處理：Notebook v5 與 Benchmark 的 cell ① 加入 Clocks.fclk0_mhz = 100；已在 100 MHz 重跑：Benchmark 24/24（99.999 MHz，
+    板上與模擬週期比 1.0002）、Board Test v5 52/52（見 XDOTP16_BENCHMARK.md 3b、3c）。
+3d. riscv-arch-test（已完成，模擬）：RV32I 32/38、MUL 1/8、Zbb 18/18 通過（核心支援的 51 項全過），
+    其餘 13 項為未實作指令（lb/lh/sb/sh、MULH*、DIV/REM）預期 FAIL。Zbb 參考簽章用 QEMU 8.2.2（先以 46 項官方簽章驗證）。
+    突變 9/10 被抓到；load-use stall 關閉未被抓到（ISA 層級測試不涵蓋 hazard，自建 testbench 可抓）。
+    只在模擬與 2 MB 記憶體跑，未上板。細節見 docs/ARCH_TEST.md。
 4. 選配：XDOTP16 累加版（XDOTP16ACC，需第三個讀取埠與 forwarding/hazard 修改）；
-   riscv-arch-test；記憶體放大到 16 KB；
+   記憶體放大到 16 KB；
    CPU 執行中 PS 寫入記憶體的行為驗證。
 5. 整理專題成果資料（結果報告）：IP 版本紀錄（第五節）、各版 Vivado 數據、板測結果、Bug 與教訓。
 
