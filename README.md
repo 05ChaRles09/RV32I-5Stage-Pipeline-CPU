@@ -194,7 +194,8 @@ SIZE = 0x10000
 ├── axi/                  AXI4-Lite IP 頂層與 S00_AXI wrapper（含 trace / illegal 暫存器、IMEM/DMEM 的 BRAM master 介面）
 ├── bram_init/            Block Memory Generator 初始化檔（COE，由 tools/gen_coe.py 產生）
 ├── sim/                  Testbench、測試資料（.hex / .mem）、run_xsim.bat / run_xsim.sh
-├── tools/                Python 黃金模型與測試資料產生器（選用，Vivado 流程不需要）
+├── tools/                Python 黃金模型與測試資料產生器、riscv-arch-test 執行器（選用，Vivado 流程不需要）
+├── arch_test/            riscv-arch-test 目標環境（target/）與執行結果摘要（results/summary.json）
 ├── pynq_5-stage-pipeline-CPU_TEST/
 │                         板上測試 Notebook、.bit / .hwh、測試報告 JSON
 ├── docs/                 Vivado 使用指南、Stage 2b 操作與踩雷、IP 打包踩雷紀錄、開發紀錄與 Bug 整理、專題成果報告素材（PROJECT_REPORT_MATERIALS.md）、XDOTP16 效益量測（XDOTP16_BENCHMARK.md）
@@ -297,7 +298,7 @@ Vivado 2022.2，裝置 `xczu5eg-sfvc784-1-i`（PYNQ-ZU），Implementation 完�
 - DSP48E2 共 5 個：`MUL` 3 個 + `XDOTP16` 2 個。
 - 以上數字是 **Stage 1（LUTRAM、組合讀取）** 的量測結果：Instruction / Data Memory 與 Register File 以 Distributed RAM 實作，不使用 Block RAM。Stage 2a 之後的重新量測結果見下一小節。
 - 所有時序皆已滿足，但 hold slack 僅 +0.001 ns，不同 Implementation run 之間可能浮動。
-- 設計時脈為 PL clock 100 MHz（10 ns 約束）。以 setup slack +1.977 ns 粗估，關鍵路徑約 8 ns（約 125 MHz 上限）；此為依 slack 的估算。另外，PYNQ-ZU 板上 PL0 的實際來源是 IOPLL（約 1500 MHz ÷ 8 = 187.5 MHz），與 Block Design 設定的 100 MHz 不同；XDOTP16 效益量測的第一次實板測試因此是在 187.498 MHz 下全部通過，超出 100 MHz 約束的簽核範圍，僅代表此板此溫度下可運作，不是時序保證。Notebook v5 與 Benchmark 現在載入後會先把 PL 時脈設為 100 MHz（見 [`docs/XDOTP16_BENCHMARK.md`](docs/XDOTP16_BENCHMARK.md) 3b 節）。
+- 設計時脈為 PL clock 100 MHz（10 ns 約束）。以 setup slack +1.977 ns 粗估，關鍵路徑約 8 ns（約 125 MHz 上限）；此為依 slack 的估算。另外，PYNQ-ZU 板上 PL0 的實際來源是 IOPLL（約 1500 MHz ÷ 8 = 187.5 MHz），與 Block Design 設定的 100 MHz 不同；XDOTP16 效益量測的第一次實板測試因此是在 187.498 MHz 下全部通過，超出 100 MHz 約束的簽核範圍，僅代表此板此溫度下可運作，不是時序保證。Notebook v5 與 Benchmark 現在載入後會先把 PL 時脈設為 100 MHz，並已在 100 MHz 重跑通過（v5 52/52、Benchmark 24/24）（見 [`docs/XDOTP16_BENCHMARK.md`](docs/XDOTP16_BENCHMARK.md) 3b 節）。
 
 #### Stage 2a（IP 1.5）：IMEM/DMEM 改為 BRAM 同步讀取後重新量測
 
@@ -352,13 +353,23 @@ Vivado 2022.2，裝置 `xczu5eg-sfvc784-1-i`（PYNQ-ZU），Implementation 完�
 - 總功耗幾乎全由 PS8（Zynq 的 ARM 處理器）佔用；本 CPU IP 約 0.027 W，只佔總量約 1%。
 - 這是 Vivado 的預設活動率估算（Confidence Level：Medium，內部節點活動率未用模擬 SAIF 校正），僅供參考，非板上實測。
 
+### riscv-arch-test（官方 ISA 合規測試，模擬）
+
+| 套件 | PASS | 預期 FAIL（未實作） |
+|---|---|---|
+| RV32I（38） | 32 | 6（`lb/lbu/lh/lhu/sb/sh`，核心只有 `lw/sw`） |
+| RV32M（8） | 1（`mul`） | 7（`mulh*` / `div*` / `rem*`） |
+| Zbb（18） | 18 | 0 |
+
+核心支援的 **51 / 51 項全部通過**。I / M 以官方 `reference_output` 比對；Zbb 以 QEMU 8.2.2 為參考（QEMU 先以 46 項官方簽章驗證，46/46 相同）。突變測試 9/10 被抓到；未抓到的 load-use stall 屬流水線 hazard，由自建 testbench 負責。方法、重現步驟與限制見 [`docs/ARCH_TEST.md`](docs/ARCH_TEST.md)。
+
 ### 驗證範圍與限制
 
 目前已在實板上驗證內建測試程式的執行結果、控制／除錯介面、特定程式的 trace 與 ISA 黃金模型一致性，Zbb / `MUL` / `XDOTP16` 的指定運算與非法指令偵測，以及 PS 經 AXI BRAM Controller 載入並執行不同程式（40 支隨機程式與黃金模型逐筆一致）。
 
 目前測試結果**尚不能單獨證明**：
 
-- 所有合法指令編碼與所有邊界情況均通過完整 compliance test（例如 riscv-arch-test）
+- 完整的 ISA compliance：riscv-arch-test 已通過（核心支援的 51 項全過，僅在模擬、2 MB 記憶體下執行，見 [`docs/ARCH_TEST.md`](docs/ARCH_TEST.md)），但尚未在實板上跑，也不涵蓋核心未實作的指令
 - 所有 forwarding、load-use stall、branch flush 情境均已完整覆蓋
 - 實際可達的最高時脈（目前只有依 slack 的估算）、板上實測功耗，以及不同 Vivado run 之間 hold slack（目前僅 +0.001 ns）的穩定性
 - CPU 執行中由 PS 寫入 IMEM／DMEM 的行為（目前只在 CPU reset 時載入程式；執行中只測了 PS 讀取）
@@ -407,6 +418,8 @@ RV32I CPU
 
 ### Phase 3 — RISC-V Extensions
 
+- [x] **riscv-arch-test**：RV32I / `MUL` / Zbb 共 51 項核心支援的測試全部通過（模擬；詳見 `docs/ARCH_TEST.md`）
+
 - [x] **RV32M：`MUL`**（單週期、低 32 位元；`MULH*` / `DIV*` / `REM*` 仍視為 illegal）
 - [x] **Zbb：`CLZ` / `CTZ` / `CPOP`**
 - [x] **Zbb：`MIN` / `MAX`**
@@ -414,7 +427,7 @@ RV32I CPU
 - [x] **Zbb：`ROL` / `ROR`**
 - [x] **Custom `XDOTP16`**（不累加版，模擬與實板皆通過）
 - [ ] `XDOTP16` 累加版（`rd += 內積`，需第三個讀取埠與 forwarding / hazard 修改）
-- [x] 以 FIR / 內積 / 矩陣乘比較使用與未使用 `XDOTP16` 的週期數（RTL 模擬：比純標量快 1.5～1.8 倍；實板 24/24 PASS，板上週期數與模擬一致；見 [`docs/XDOTP16_BENCHMARK.md`](docs/XDOTP16_BENCHMARK.md)）
+- [x] 以 FIR / 內積 / 矩陣乘比較使用與未使用 `XDOTP16` 的週期數（RTL 模擬：比純標量快 1.5～1.8 倍；實板 24/24 PASS（100 MHz 下重跑亦通過），板上週期數與模擬一致；見 [`docs/XDOTP16_BENCHMARK.md`](docs/XDOTP16_BENCHMARK.md)）
 
 `XDOTP16` 作為自訂指令，用於展示 instruction decode、datapath 與 ALU／functional unit 的硬體擴充。
 
