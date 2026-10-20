@@ -141,7 +141,7 @@ Branch / Jump 改變 PC 時，CPU 會重新導向 PC，並 flush 不再有效的
         │                         │
         │ CPU AXI4-Lite Wrapper   │
         │          │              │
-        │ RV32I 5-Stage CPU        │
+        │ RV32I 5-Stage CPU       │
         │ ├─ Instruction Memory   │
         │ ├─ Data Memory          │
         │ ├─ Trace Buffer         │
